@@ -849,7 +849,7 @@ async function createProjectOnDb(instructor, cohort, silent=false){
     owner_id: ownerId(),
     instructor,
     cohort,
-    daily_budget: null,
+    daily_budget: 0,
     range_start: null,
     range_end: null,
     actual_revenue: 0,
@@ -2867,3 +2867,4 @@ btnLogout.addEventListener('click', async ()=>{
 </script>
 </body>
 </html>
+
