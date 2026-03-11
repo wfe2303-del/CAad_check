@@ -47,7 +47,7 @@
     .card .hd .hint{font-size:12px;color:var(--muted);margin-top:2px}
     .card .bd{padding:12px 14px 14px 14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input[type="date"], input[type="number"], input[type="text"], select{
+    input[type="date"], input[type="number"], input[type="text"], input[type="password"], select{
       border:1px solid var(--bd);border-radius:10px;padding:9px 10px;font-size:13px;background:#fff;min-height:36px;
     }
     input[type="number"]{font-family:var(--mono)}
@@ -121,6 +121,11 @@
       box-shadow:0 10px 25px rgba(0,0,0,.18);display:none;white-space:nowrap;
     }
     .tip b{font-family:var(--mono)}
+    .empty-state{
+      border:1px dashed #cbd5e1;border-radius:16px;background:#fff;padding:28px 18px;text-align:center;color:#475569;
+    }
+    .empty-state h3{margin:0 0 8px 0;font-size:16px}
+    .empty-state p{margin:0;font-size:13px;color:#64748b}
   </style>
 </head>
 
@@ -135,8 +140,8 @@
       <div class="actions">
         <span class="pill">현재 프로젝트: <b id="curProjLabel">없음</b></span>
         <span class="pill"><b id="statDates">0</b>일</span>
-        <span class="pill">로그인: <b id="authStatus">-</b></span>
-        <button id="btnLogout">로그아웃</button>
+        <span class="pill">로그인: <b id="authStatus">미로그인</b></span>
+        <button id="btnLogout" style="display:none">로그아웃</button>
         <button id="btnReset" class="btn-danger">전체 초기화</button>
         <button id="btnRecalc" class="btn-primary">재계산</button>
       </div>
@@ -558,18 +563,51 @@
   </section>
 </main>
 
+<div id="loginOverlay" style="
+  position:fixed; inset:0; background:rgba(15,23,42,.45);
+  display:none; align-items:center; justify-content:center; z-index:9998;
+">
+  <div style="
+    width:min(420px, calc(100vw - 32px));
+    background:#fff; border:1px solid #e5e7eb; border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.18); padding:22px;
+  ">
+    <div style="font-size:18px;font-weight:900;margin-bottom:6px">로그인</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:16px">
+      저장된 데이터를 보려면 로그인해야 합니다.
+    </div>
+
+    <div style="display:grid;gap:10px">
+      <input id="loginId" type="text" placeholder="아이디" value="classaround"/>
+      <input id="loginPw" type="password" placeholder="비밀번호"/>
+      <button id="btnLogin" class="btn-primary">로그인</button>
+      <div id="loginMsg" style="font-size:12px;color:#dc2626;min-height:18px"></div>
+    </div>
+  </div>
+</div>
+
 <input id="fileInput" type="file" accept=".csv,.tsv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none"/>
 <div id="tooltip" class="tip"></div>
 
 <script>
+/** =========================
+ *  Supabase 설정
+ *  ========================= */
 const UI_LS_KEY = 'INDEPENDENT_REPORT_V441_UI_ONLY';
-const SUPABASE_URL = 'https://eaukbojyuygwhkaxdvnx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhdWtib2p5dXlnd2hrYXhkdm54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTk0OTMsImV4cCI6MjA4ODc3NTQ5M30.0IAiljx47666xWxJq5N_kDmjPUpESmibPqEjDtb2TRc';
+
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_PUBLIC_KEY';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authSession = null;
 
-/** helpers */
+const LOGIN_ID_MAP = {
+  classaround: 'classaround@gmail.com'
+};
+
+/** =========================
+ *  공통 유틸
+ *  ========================= */
 function nowId(){ return 'p_' + Math.random().toString(16).slice(2) + '_' + Date.now().toString(16); }
 function esc(s){ return String(s)
   .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
@@ -625,6 +663,9 @@ function normalizeDateFromAny(v){
 }
 function deepClone(v){ return JSON.parse(JSON.stringify(v)); }
 
+/** =========================
+ *  상태 / UI 저장
+ *  ========================= */
 function defaultCompare(projectId=''){
   return {
     leftId: projectId || '',
@@ -659,7 +700,9 @@ function saveState(){
 }
 const state = loadState();
 
-/** auth */
+/** =========================
+ *  인증
+ *  ========================= */
 async function ensureAuth(){
   const { data:{session}, error } = await sb.auth.getSession();
   if(error) throw error;
@@ -672,10 +715,20 @@ function ownerId(){
 function isLoggedIn(){
   return !!authSession?.user?.id;
 }
-function loginLabel(){
-  const email = authSession?.user?.email || '';
-  if(email === 'classaround@gmail.com') return 'classaround';
-  return email || '-';
+function getLoginEmailFromId(id){
+  const key = String(id || '').trim().toLowerCase();
+  return LOGIN_ID_MAP[key] || '';
+}
+async function loginWithIdPassword(id, password){
+  const email = getLoginEmailFromId(id);
+  if(!email) throw new Error('존재하지 않는 아이디야.');
+  if(!password) throw new Error('비밀번호를 입력해줘.');
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error) throw error;
+
+  authSession = data.session || null;
+  return data;
 }
 async function logout(){
   const { error } = await sb.auth.signOut();
@@ -683,10 +736,20 @@ async function logout(){
   authSession = null;
 }
 function requireLogin(){
-  if(!isLoggedIn()) throw new Error('로그인이 필요해.');
+  if(!isLoggedIn()){
+    updateAuthUi();
+    throw new Error('로그인이 필요해.');
+  }
+}
+function loginIdLabelFromSession(){
+  const email = authSession?.user?.email || '';
+  if(email === 'classaround@gmail.com') return 'classaround';
+  return email || '';
 }
 
-/** project map */
+/** =========================
+ *  DB 매핑
+ *  ========================= */
 function mapProjectRowToState(projectRow, ownedRows, adsRows){
   return {
     id: projectRow.id,
@@ -726,26 +789,37 @@ function mapProjectRowToState(projectRow, ownedRows, adsRows){
   };
 }
 
+/** =========================
+ *  DB 로드 / CRUD
+ *  ========================= */
 async function loadStateFromDb(){
   await ensureAuth();
-  requireLogin();
+
+  if(!isLoggedIn()){
+    state.projects = {};
+    state.currentProjectId = '';
+    return;
+  }
 
   const { data:projects, error:pErr } = await sb
     .from('projects')
     .select('*')
     .order('created_at', { ascending:true });
+
   if(pErr) throw pErr;
 
   const { data:ownedRows, error:oErr } = await sb
     .from('owned_entries')
     .select('*')
     .order('entry_date', { ascending:true });
+
   if(oErr) throw oErr;
 
   const { data:adsRows, error:aErr } = await sb
     .from('ads_entries')
     .select('*')
     .order('entry_date', { ascending:true });
+
   if(aErr) throw aErr;
 
   state.projects = {};
@@ -769,7 +843,6 @@ async function loadStateFromDb(){
 
   saveState();
 }
-
 async function createProjectOnDb(instructor, cohort, silent=false){
   await ensureAuth();
   requireLogin();
@@ -843,6 +916,7 @@ async function deleteProjectOnDb(projectId){
   if(error) throw error;
 
   delete state.projects[projectId];
+
   const ids = Object.keys(state.projects);
   state.currentProjectId = ids[0] || '';
 
@@ -851,7 +925,6 @@ async function deleteProjectOnDb(projectId){
     if(!state.projects[state.compare.leftId]) state.compare.leftId = state.currentProjectId;
     if(!state.projects[state.compare.rightId]) state.compare.rightId = state.currentProjectId;
   }
-
   saveState();
 }
 async function clearAllDataOnDb(){
@@ -909,7 +982,9 @@ async function deleteOwnedOnDb(projectId, date, media){
   if(error) throw error;
 
   const p = state.projects[projectId];
-  p.ownedEntries = p.ownedEntries.filter(x => !(x.date === date && (x.media||'').trim() === media));
+  p.ownedEntries = p.ownedEntries.filter(x => !(
+    x.date === date && (x.media||'').trim() === media
+  ));
 }
 async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   await ensureAuth();
@@ -934,7 +1009,13 @@ async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   const p = state.projects[projectId];
   const key = `${date}||${platform}`;
   const idx = p.adsEntries.findIndex(x => `${x.date}||${x.platform}` === key);
-  const rec = { date, platform, spend:Number(spend||0), clicks:Number(clicks||0), realDb:Number(realDb||0) };
+  const rec = {
+    date,
+    platform,
+    spend:Number(spend || 0),
+    clicks:Number(clicks || 0),
+    realDb:Number(realDb || 0)
+  };
   if(idx>=0) p.adsEntries[idx] = rec;
   else p.adsEntries.push(rec);
 }
@@ -1019,7 +1100,9 @@ async function bulkUpsertAdsOnDb(projectId, rows){
   p.adsEntries = [...m.values()];
 }
 
-/** DOM */
+/** =========================
+ *  DOM
+ *  ========================= */
 const $ = (id)=>document.getElementById(id);
 
 const curProjLabel = $('curProjLabel');
@@ -1102,12 +1185,20 @@ const actualRevenue = $('actualRevenue');
 const btnSaveActualRevenue = $('btnSaveActualRevenue');
 const revenueCompareBox = $('revenueCompareBox');
 
+const loginOverlay = $('loginOverlay');
+const loginId = $('loginId');
+const loginPw = $('loginPw');
+const btnLogin = $('btnLogin');
+const loginMsg = $('loginMsg');
+
 const fileInput = $('fileInput');
 const tip = $('tooltip');
 const chartDb = $('chartDb');
 const chartDailySpend = $('chartDailySpend');
 
-/** tooltip */
+/** =========================
+ *  Tooltip
+ *  ========================= */
 function showTip(x,y,lines,color){
   tip.style.display='block';
   tip.style.left = x+'px';
@@ -1119,7 +1210,9 @@ function showTip(x,y,lines,color){
 }
 function hideTip(){ tip.style.display='none'; }
 
-/** project helpers */
+/** =========================
+ *  Projects
+ *  ========================= */
 function getProj(){ return state.projects[state.currentProjectId]; }
 function listProjects(){ return Object.values(state.projects || {}); }
 function projLabel(p){ return `${p.instructor} / ${p.cohort}`; }
@@ -1136,7 +1229,9 @@ function setCurrent(id){
   renderAll();
 }
 
-/** csv */
+/** =========================
+ *  CSV parser
+ *  ========================= */
 function parseCSV(text){
   const rows=[];
   let i=0, field='', row=[], inQuotes=false;
@@ -1165,11 +1260,13 @@ function parseCSV(text){
   return rows;
 }
 
-/** UI CRUD */
+/** =========================
+ *  CRUD UI wrappers
+ *  ========================= */
 async function upsertOwned(date, media, addDb){
   const p=getProj();
   media=(media||'').trim();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date) return alert('날짜를 선택해줘');
   if(!media) return alert('매체를 입력해줘');
 
@@ -1184,7 +1281,7 @@ async function upsertOwned(date, media, addDb){
 async function deleteOwned(date, media){
   const p=getProj();
   media=(media||'').trim();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date||!media) return alert('삭제할 날짜+매체를 입력해줘');
 
   try{
@@ -1197,7 +1294,7 @@ async function deleteOwned(date, media){
 }
 async function upsertAds(date, platform, spend, clicks, realDb){
   const p=getProj();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date) return alert('날짜를 선택해줘');
 
   try{
@@ -1210,7 +1307,7 @@ async function upsertAds(date, platform, spend, clicks, realDb){
 }
 async function deleteAds(date, platform){
   const p=getProj();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date||!platform) return alert('삭제할 날짜+매체를 선택해줘');
 
   try{
@@ -1222,7 +1319,9 @@ async function deleteAds(date, platform){
   }
 }
 
-/** aggregation */
+/** =========================
+ *  Aggregation
+ *  ========================= */
 function groupOwnedDaily(p, mediaFilter='all'){
   const m=new Map();
   for(const e of p.ownedEntries){
@@ -1280,7 +1379,9 @@ function computeAdAverages(p, platformFilter='all'){
   return { spend, clicks, conv, avgCpc, avgCpa, cvr };
 }
 
-/** metrics */
+/** =========================
+ *  이전기수 / 가치 계산
+ *  ========================= */
 function getPrevValuePerDbForProject(p){
   const mode = p.prevLink?.mode || 'none';
 
@@ -1349,10 +1450,12 @@ function buildMainRows(p){
   return {rows, last: rows[rows.length-1] || null};
 }
 
-/** imports */
+/** =========================
+ *  Imports
+ *  ========================= */
 async function importAdsCsvForPlatform(csvText, platform){
   const p=getProj();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
 
   const rows=parseCSV(csvText);
   if(rows.length<2){ alert('CSV가 비어있어'); return; }
@@ -1385,7 +1488,7 @@ async function importAdsCsvForPlatform(csvText, platform){
 }
 async function importOwnedXlsx(file){
   const p=getProj();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
 
   if(typeof XLSX === 'undefined'){
     alert('XLSX 로드 실패(CDN 차단 가능). CSV로 업로드해줘.');
@@ -1423,7 +1526,7 @@ async function importOwnedXlsx(file){
 }
 async function importOwnedCsv(csvText){
   const p=getProj();
-  if(!p) return alert('프로젝트를 먼저 선택해줘');
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
 
   const rows=parseCSV(csvText);
   if(rows.length<2){ alert('CSV가 비어있어'); return; }
@@ -1453,7 +1556,9 @@ async function importOwnedCsv(csvText){
   }
 }
 
-/** canvas */
+/** =========================
+ *  Canvas helpers
+ *  ========================= */
 function getDprCanvas(canvas){
   const dpr=window.devicePixelRatio||1;
   const rect=canvas.getBoundingClientRect();
@@ -1490,7 +1595,9 @@ function niceShortLabel(s, max=10){
 
 let mainHover = { dbPoints: [], spendPoints: [] };
 
-/** charts */
+/** =========================
+ *  Main charts
+ *  ========================= */
 function drawDbChart(canvas, rows){
   const {ctx,w,h}=getDprCanvas(canvas);
   ctx.clearRect(0,0,w,h);
@@ -1507,6 +1614,7 @@ function drawDbChart(canvas, rows){
     ctx.fillText('데이터가 없습니다', x0+10, y0+20);
     return;
   }
+
   const maxY=Math.max(...rows.map(r=>r.ownedCum), ...rows.map(r=>r.paidCum), ...rows.map(r=>r.recruitDb)) || 1;
   const n=rows.length;
   const xs=i=> x0 + (x1-x0)*(n===1?0:i/(n-1));
@@ -1614,7 +1722,9 @@ function drawDailySpendChart(canvas, rows, dailyBudget){
   }
 }
 
-/** compare */
+/** =========================
+ *  Compare colors
+ *  ========================= */
 function hashHue(str){
   let h=0;
   const s=String(str||'');
@@ -1629,6 +1739,10 @@ function projectSoftColor(p, alpha=0.26){
   const hue = hashHue(`${p.instructor}||${p.cohort}`);
   return `hsla(${hue}, 78%, 45%, ${alpha})`;
 }
+
+/** =========================
+ *  Snapshot & Metrics
+ *  ========================= */
 function getFinalSnapshot(p){
   const {last}=buildMainRows(p);
   const adsAll=computeAdAverages(p,'all');
@@ -1688,6 +1802,10 @@ function formatMetric(val, type){
   if(type==='x') return (Number.isFinite(val)? val.toFixed(1)+'배' : '0.0배');
   return String(val??'');
 }
+
+/** =========================
+ *  Compare UI helpers
+ *  ========================= */
 function ensureCompareIds(){
   const ps=listProjects();
   if(ps.length===0) return;
@@ -1748,7 +1866,11 @@ function setOptionsPreserve(selectEl, options, wantedValue){
   else if(options[0]) selectEl.value = String(options[0].value);
 }
 
+/** =========================
+ *  Compare chart
+ *  ========================= */
 let compareHover = { items:[] };
+
 function drawCompareBarChart(canvas, items){
   const {ctx,w,h}=getDprCanvas(canvas);
   ctx.clearRect(0,0,w,h);
@@ -1857,6 +1979,7 @@ function drawCompareBarChart(canvas, items){
     });
   }
 }
+
 function renderCompareVs(){
   if(!hasProject()) return;
   ensureCompareIds();
@@ -1971,7 +2094,7 @@ function buildCompareGraphData(){
 function renderCompareGraph(){
   if(!hasProject()){
     cmpGraphTitle.textContent = '-';
-    cmpGraphSub.textContent = '프로젝트를 불러오면 비교 그래프가 여기 표시됨';
+    cmpGraphSub.textContent = '로그인 후 데이터를 불러와줘';
     requestAnimationFrame(()=> drawCompareBarChart(chartCompare, []));
     return;
   }
@@ -2000,7 +2123,88 @@ function renderCompare(){
   renderCompareGraph();
 }
 
-/** render */
+/** =========================
+ *  Empty / Auth UI
+ *  ========================= */
+function updateAuthUi(){
+  if(isLoggedIn()){
+    authStatus.textContent = loginIdLabelFromSession() || '로그인됨';
+    btnLogout.style.display = '';
+    loginOverlay.style.display = 'none';
+  }else{
+    authStatus.textContent = '미로그인';
+    btnLogout.style.display = 'none';
+    loginOverlay.style.display = 'flex';
+  }
+}
+function resetUiForNoProject(){
+  curProjLabel.textContent = isLoggedIn() ? '프로젝트 없음' : '로그인 필요';
+  curInstructor.textContent = '-';
+  curCohort.textContent = '-';
+  statDates.textContent = '0';
+
+  projSelect.innerHTML = '';
+  cmpLeftProj.innerHTML = '';
+  cmpRightProj.innerHTML = '';
+  prevProjSelect.innerHTML = '<option value="">(선택)</option>';
+  ownedFilter.innerHTML = '<option value="all">전체</option>';
+  adsFilter.value = 'all';
+
+  kpiTotalDb.textContent = '0';
+  kpiPaidDb.textContent = '0';
+  kpiOwnedDb.textContent = '0';
+  kpiExpectedRev.textContent = '₩0';
+
+  kpiAvgCpc.textContent = '₩0';
+  kpiAvgCpa.textContent = '₩0';
+  kpiCvr.textContent = '0.00%';
+  kpiAdSpend.textContent = '₩0';
+
+  cfgDailyBudget.value = '';
+  cfgValuePerDb.value = '';
+  actualRevenue.value = '';
+  rangeStart.value = '';
+  rangeEnd.value = '';
+  prevDb.value = '';
+  prevSpend.value = '';
+  prevRevenue.value = '';
+  prevLinkInfo.textContent = '현재: 이전기수 미연결';
+  revenueCompareBox.textContent = isLoggedIn()
+    ? '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨'
+    : '로그인 후 프로젝트를 불러오면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
+
+  mainTbody.innerHTML = `
+    <tr>
+      <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트가 없습니다. 새 프로젝트를 만들어줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td>
+    </tr>
+  `;
+  ownedTbody.innerHTML = `
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">
+      ${isLoggedIn() ? '데이터가 없습니다.' : '로그인 후 데이터를 불러와줘.'}
+    </td></tr>
+  `;
+  adsTbody.innerHTML = `
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">
+      ${isLoggedIn() ? '데이터가 없습니다.' : '로그인 후 데이터를 불러와줘.'}
+    </td></tr>
+  `;
+  cmpVsTbody.innerHTML = '';
+
+  cmpGraphTitle.textContent = '-';
+  cmpGraphSub.textContent = isLoggedIn() ? '프로젝트를 불러오면 비교 그래프가 여기 표시됨' : '로그인 후 데이터를 불러와줘';
+
+  requestAnimationFrame(()=>{
+    drawDbChart(chartDb, []);
+    drawDailySpendChart(chartDailySpend, [], 0);
+    drawCompareBarChart(chartCompare, []);
+  });
+}
+
+/** =========================
+ *  Render
+ *  ========================= */
 function refreshProjectSelect(){
   const ps=listProjects().sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
   projSelect.innerHTML = ps.map(p=>`<option value="${esc(p.id)}">${esc(projLabel(p))}</option>`).join('');
@@ -2010,7 +2214,7 @@ function refreshProjectSelect(){
 function refreshHeaderBadges(){
   const p=getProj();
   if(!p){
-    curProjLabel.textContent = '프로젝트 없음';
+    curProjLabel.textContent = isLoggedIn() ? '프로젝트 없음' : '로그인 필요';
     curInstructor.textContent = '-';
     curCohort.textContent = '-';
     return;
@@ -2026,7 +2230,11 @@ function uniqueOwnedMedias(p){
 function renderOwned(){
   const p=getProj();
   if(!p){
-    ownedTbody.innerHTML = `<tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">프로젝트를 먼저 선택해줘.</td></tr>`;
+    ownedTbody.innerHTML = `
+      <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트를 먼저 선택해줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td></tr>
+    `;
     return;
   }
 
@@ -2047,7 +2255,9 @@ function renderOwned(){
       <td>${esc((r.media||'').trim())}</td>
       <td class="num">${fmtInt(r.addDb)}</td>
     </tr>
-  `).join('') : `<tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>`;
+  `).join('') : `
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>
+  `;
 }
 function renderAds(){
   const p=getProj();
@@ -2056,7 +2266,11 @@ function renderAds(){
     kpiAvgCpa.textContent = '₩0';
     kpiCvr.textContent = '0.00%';
     kpiAdSpend.textContent = '₩0';
-    adsTbody.innerHTML = `<tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">프로젝트를 먼저 선택해줘.</td></tr>`;
+    adsTbody.innerHTML = `
+      <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트를 먼저 선택해줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td></tr>
+    `;
     return;
   }
 
@@ -2088,7 +2302,9 @@ function renderAds(){
         <td class="center mono">${cvr===null?'':fmtRate(cvr)}</td>
       </tr>
     `;
-  }).join('') : `<tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>`;
+  }).join('') : `
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>
+  `;
 }
 function renderMain(){
   const p=getProj();
@@ -2098,7 +2314,13 @@ function renderMain(){
     kpiPaidDb.textContent='0';
     kpiOwnedDb.textContent='0';
     kpiExpectedRev.textContent='₩0';
-    mainTbody.innerHTML = `<tr><td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">프로젝트를 먼저 만들어줘.</td></tr>`;
+    mainTbody.innerHTML = `
+      <tr>
+        <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">
+          ${isLoggedIn() ? '프로젝트를 먼저 만들어줘.' : '로그인 후 데이터를 불러와줘.'}
+        </td>
+      </tr>
+    `;
     requestAnimationFrame(()=>{
       drawDbChart(chartDb, []);
       drawDailySpendChart(chartDailySpend, [], 0);
@@ -2133,7 +2355,11 @@ function renderMain(){
       <td class="center mono">${r.spendRate===null?'':fmtRate(r.spendRate)}</td>
       <td class="num">${fmtWon(r.expectedRev)}</td>
     </tr>
-  `).join('') : `<tr><td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>`;
+  `).join('') : `
+    <tr>
+      <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td>
+    </tr>
+  `;
 
   requestAnimationFrame(()=>{
     drawDbChart(chartDb, rows);
@@ -2151,7 +2377,9 @@ function refreshSettingsUI(){
     prevRevenue.value = '';
     prevProjSelect.innerHTML = '<option value="">(선택)</option>';
     prevLinkInfo.textContent = '현재: 이전기수 미연결';
-    revenueCompareBox.textContent = '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
+    revenueCompareBox.textContent = isLoggedIn()
+      ? '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨'
+      : '로그인 후 프로젝트를 불러오면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
     return;
   }
 
@@ -2199,21 +2427,29 @@ function refreshSettingsUI(){
     `<b>이전기수 DB당 가치</b> ${fmtWon(prevValuePerDbFinal)} → <b>예상매출</b> ${fmtWon(expected)} (이전 DB당가치×현 모집DB)`;
 }
 function renderAll(){
-  authStatus.textContent = loginLabel();
+  updateAuthUi();
+
+  if(!hasProject()){
+    resetUiForNoProject();
+    return;
+  }
+
   refreshProjectSelect();
   refreshHeaderBadges();
   renderMain();
   renderOwned();
   renderAds();
 
-  const cmpVisible  = $('view-compare').style.display !== 'none';
+  const cmpVisible = $('view-compare').style.display !== 'none';
   if(cmpVisible) renderCompare();
   else renderCompareGraph();
 
   refreshSettingsUI();
 }
 
-/** project mgmt */
+/** =========================
+ *  Project management
+ *  ========================= */
 async function createProject(){
   const instructor = prompt('강사명 입력', '숙사장')?.trim();
   if(!instructor) return;
@@ -2278,7 +2514,9 @@ async function deleteProject(){
   }
 }
 
-/** tabs */
+/** =========================
+ *  Tabs
+ *  ========================= */
 document.querySelectorAll('.tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -2293,7 +2531,9 @@ document.querySelectorAll('.tab').forEach(btn=>{
   });
 });
 
-/** events */
+/** =========================
+ *  General events
+ *  ========================= */
 projSelect.addEventListener('change', ()=> setCurrent(projSelect.value));
 btnNewProj.addEventListener('click', createProject);
 btnDupProj.addEventListener('click', duplicateProject);
@@ -2302,6 +2542,7 @@ btnDelProj.addEventListener('click', deleteProject);
 btnRecalc.addEventListener('click', ()=> renderAll());
 
 btnReset.addEventListener('click', async ()=>{
+  if(!isLoggedIn()) return alert('로그인 후 사용할 수 있어');
   if(!confirm('정말 전체 초기화할까? (모든 프로젝트/데이터 삭제)')) return;
   try{
     await clearAllDataOnDb();
@@ -2330,14 +2571,17 @@ btnSaveRange.addEventListener('click', async ()=>{
   }
 });
 
-btnAddOwned.addEventListener('click', ()=> upsertOwned(ownedDate.value, ownedMedia.value, ownedAddDb.value));
-btnDelOwned.addEventListener('click', ()=> deleteOwned(ownedDate.value, ownedMedia.value));
+// owned
+btnAddOwned.addEventListener('click', async ()=> upsertOwned(ownedDate.value, ownedMedia.value, ownedAddDb.value));
+btnDelOwned.addEventListener('click', async ()=> deleteOwned(ownedDate.value, ownedMedia.value));
 ownedFilter.addEventListener('change', ()=> renderOwned());
 
-btnAddAds.addEventListener('click', ()=> upsertAds(adsDate.value, adsPlatform.value, adsSpend.value, adsClicks.value, adsRealDb.value));
-btnDelAds.addEventListener('click', ()=> deleteAds(adsDate.value, adsPlatform.value));
+// ads
+btnAddAds.addEventListener('click', async ()=> upsertAds(adsDate.value, adsPlatform.value, adsSpend.value, adsClicks.value, adsRealDb.value));
+btnDelAds.addEventListener('click', async ()=> deleteAds(adsDate.value, adsPlatform.value));
 adsFilter.addEventListener('change', ()=> renderAds());
 
+// settings
 btnSaveCfg.addEventListener('click', async ()=>{
   const p=getProj();
   if(!p) return alert('프로젝트를 먼저 선택해줘');
@@ -2404,7 +2648,11 @@ btnSavePrevManual.addEventListener('click', async ()=>{
   p.prevLink = {
     mode:'manual',
     prevProjectId:'',
-    manual:{ db:Number(prevDb.value||0), spend:Number(prevSpend.value||0), revenue:Number(prevRevenue.value||0) }
+    manual:{
+      db:Number(prevDb.value||0),
+      spend:Number(prevSpend.value||0),
+      revenue:Number(prevRevenue.value||0)
+    }
   };
 
   try{
@@ -2417,7 +2665,9 @@ btnSavePrevManual.addEventListener('click', async ()=>{
   }
 });
 
-/** upload */
+/** =========================
+ *  Upload routing
+ *  ========================= */
 let pendingUpload=null;
 btnOwnedXlsx.addEventListener('click', ()=>{ pendingUpload='owned_xlsx'; fileInput.value=''; fileInput.click(); });
 btnOwnedCsv.addEventListener('click', ()=>{ pendingUpload='owned_csv'; fileInput.value=''; fileInput.click(); });
@@ -2460,7 +2710,9 @@ fileInput.addEventListener('change', async ()=>{
   }
 });
 
-/** compare events */
+/** =========================
+ *  Compare events
+ *  ========================= */
 cmpLeftProj.addEventListener('change', ()=>{
   state.compare.leftId = cmpLeftProj.value;
   saveState();
@@ -2480,7 +2732,9 @@ btnApplyCompare.addEventListener('click', ()=>{
   renderCompareGraph();
 });
 
-/** tooltip events */
+/** =========================
+ *  Compare tooltip
+ *  ========================= */
 chartCompare.addEventListener('mousemove', (ev)=>{
   const rect=chartCompare.getBoundingClientRect();
   const mx=ev.clientX-rect.left;
@@ -2498,6 +2752,9 @@ chartCompare.addEventListener('mousemove', (ev)=>{
 });
 chartCompare.addEventListener('mouseleave', hideTip);
 
+/** =========================
+ *  Main chart tooltip
+ *  ========================= */
 function nearestPoint(points, mx, my, radius=10){
   let best=null, bestD=Infinity;
   const r2=radius*radius;
@@ -2547,18 +2804,47 @@ window.addEventListener('resize', ()=>{
   if(cmpVisible) renderCompare();
 });
 
-/** logout */
+/** =========================
+ *  Login events
+ *  ========================= */
+btnLogin.addEventListener('click', async ()=>{
+  loginMsg.textContent = '';
+  try{
+    await loginWithIdPassword(loginId.value, loginPw.value);
+    loginPw.value = '';
+    updateAuthUi();
+    await loadStateFromDb();
+    if(Object.keys(state.projects).length > 0){
+      ensureCompareIds();
+    }
+    renderAll();
+  }catch(err){
+    console.error(err);
+    loginMsg.textContent = err?.message || '로그인 실패';
+  }
+});
+
+loginPw.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') btnLogin.click();
+});
+
 btnLogout.addEventListener('click', async ()=>{
   try{
     await logout();
-    location.href = './login.html';
+    state.projects = {};
+    state.currentProjectId = '';
+    state.compare = defaultCompare('');
+    saveState();
+    renderAll();
   }catch(err){
     console.error(err);
     alert(err?.message || '로그아웃 실패');
   }
 });
 
-/** init */
+/** =========================
+ *  init
+ *  ========================= */
 (async function init(){
   try{
     const today=toISODate(new Date());
@@ -2566,19 +2852,14 @@ btnLogout.addEventListener('click', async ()=>{
     adsDate.value=today;
 
     await ensureAuth();
+    updateAuthUi();
 
-    if(!isLoggedIn()){
-      location.href = './login.html';
-      return;
+    if(isLoggedIn()){
+      await loadStateFromDb();
+      if(Object.keys(state.projects).length > 0){
+        ensureCompareIds();
+      }
     }
-
-    authStatus.textContent = loginLabel();
-    await loadStateFromDb();
-
-    if(Object.keys(state.projects).length > 0){
-      ensureCompareIds();
-    }
-
     renderAll();
   }catch(err){
     console.error(err);
