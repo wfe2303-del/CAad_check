@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>강사보고서 독립웹앱 v4.4.1 (모집DB=Owned+Paid)</title>
+  <title>강사별 DB보고서</title>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -174,7 +174,7 @@
       <div class="hd">
         <div>
           <h2>메인 시뮬레이션 표</h2>
-          <div class="hint">전체DB(=모집DB) / PaidDB / OwnedDB / 예상매출 + 예산 사용(일자별 추이)</div>
+          <div class="hint">전체DB(=모집DB) / PaidDB / OwnedDB / 예상매출 + 예산 사용</div>
         </div>
       </div>
       <div class="bd">
@@ -183,7 +183,7 @@
           <input type="date" id="rangeStart"/>
           <input type="date" id="rangeEnd"/>
           <button id="btnSaveRange" class="btn-primary">범위 저장</button>
-          <span class="small">비우면 “데이터가 있는 날짜만” 생성</span>
+          <span class="small"></span>
         </div>
 
         <div class="sep"></div>
@@ -218,7 +218,7 @@
             <div class="chartHead">
               <div>
                 <div style="font-weight:900;font-size:13px">누적 DB 추이 (Owned / Paid / 모집DB)</div>
-                <div class="small">라인 (마우스 올리면 날짜/값)</div>
+                <div class="small"></div>
               </div>
               <div class="legend">
                 <span><span class="dot" style="background:rgba(37,99,235,.95)"></span>Owned</span>
@@ -233,7 +233,7 @@
             <div class="chartHead">
               <div>
                 <div style="font-weight:900;font-size:13px">일자별 사용예산 추이</div>
-                <div class="small">스무딩 라인 + 포인트 + 기준선(일예산)</div>
+                <div class="small"></div>
               </div>
               <div class="legend">
                 <span><span class="dot" style="background:rgba(37,99,235,.35)"></span>일사용예산</span>
@@ -401,7 +401,7 @@
       <div class="hd">
         <div>
           <h2>강사/기수 비교 (VS + 그래프)</h2>
-          <div class="hint">좌/우 프로젝트 VS + 아래 막대그래프(툴팁/정렬/필터)로 한눈에 비교</div>
+          <div class="hint"></div>
         </div>
       </div>
 
@@ -466,7 +466,7 @@
           </div>
 
           <button id="btnApplyCompare" class="btn-primary">적용</button>
-          <span class="small">막대 위 숫자는 겹치지 않게 자동 배치</span>
+          <span class="small"></span>
         </div>
 
         <div style="height:10px"></div>
@@ -496,7 +496,7 @@
       <div class="hd">
         <div>
           <h2>설정 / 이전기수 연결 / 매출 입력</h2>
-          <div class="hint">일예산, 이전기수 연결(선택/직입), 실제매출 입력 (DB당가치 자동)</div>
+          <div class="hint"></div>
         </div>
       </div>
       <div class="bd">
@@ -516,9 +516,7 @@
               <button id="btnSaveCfg" class="btn-primary">저장</button>
             </div>
             <div class="sep"></div>
-            <div class="note">
-              v4.4.1: DB당 가치는 수동 입력이 아니라 “실매출/모집DB(Owned+Paid)”로 자동 계산됩니다.
-            </div>
+            <div class="note"></div>
           </div>
 
           <div class="chartBox">
