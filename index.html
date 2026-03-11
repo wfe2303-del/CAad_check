@@ -19,6 +19,12 @@
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:var(--bg);color:var(--fg)}
+    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter: blur(8px);border-bottom:1px solid var(--bd)}
+    .wrap{max-width:1360px;margin:0 auto;padding:14px 16px}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .title h1{font-size:16px;margin:0;font-weight:900;letter-spacing:-.2px}
+    .title .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     button{
       border:1px solid var(--bd); background:#fff; color:var(--fg);
       padding:8px 10px;border-radius:10px; cursor:pointer; font-weight:800; font-size:13px;
@@ -28,89 +34,6 @@
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
     .btn-primary:hover{background:var(--brand2);border-color:var(--brand2)}
     .btn-danger{background:#fff;color:var(--danger);border-color:#fecaca}
-
-    /* login screen */
-    #loginScreen{
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:16px;
-      background:var(--bg);
-    }
-    .login-box{
-      width:min(440px, 100%);
-      background:var(--card);
-      border:1px solid var(--bd);
-      border-radius:22px;
-      box-shadow:0 20px 50px rgba(15,23,42,.12);
-      padding:24px;
-    }
-    .login-box h1{
-      margin:0 0 8px 0;
-      font-size:22px;
-      font-weight:1000;
-      letter-spacing:-.3px;
-    }
-    .login-sub{
-      margin:0 0 18px 0;
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.5;
-    }
-    .login-label{
-      display:block;
-      margin:0 0 6px 2px;
-      font-size:12px;
-      color:var(--muted);
-      font-weight:800;
-    }
-    .login-box input{
-      width:100%;
-      border:1px solid var(--bd);
-      border-radius:12px;
-      padding:12px 14px;
-      font-size:14px;
-      background:#fff;
-      margin-bottom:12px;
-      outline:none;
-    }
-    .login-box input:focus{
-      border-color:#93c5fd;
-      box-shadow:0 0 0 4px rgba(37,99,235,.08);
-    }
-    .login-btn{
-      width:100%;
-      padding:12px 14px;
-      font-size:14px;
-    }
-    .login-msg{
-      min-height:18px;
-      margin-top:10px;
-      font-size:12px;
-      color:#dc2626;
-      white-space:pre-wrap;
-      line-height:1.45;
-    }
-    .login-hint{
-      margin-top:14px;
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.5;
-      background:#f8fafc;
-      border:1px dashed #cbd5e1;
-      padding:10px 12px;
-      border-radius:12px;
-    }
-
-    /* app screen */
-    #appScreen{display:none}
-    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter: blur(8px);border-bottom:1px solid var(--bd)}
-    .wrap{max-width:1360px;margin:0 auto;padding:14px 16px}
-    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .title h1{font-size:16px;margin:0;font-weight:900;letter-spacing:-.2px}
-    .title .sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);padding:6px 10px;border-radius:999px;background:#fff;font-size:12px;color:var(--muted)}
     .pill b{color:var(--fg)}
     main{max-width:1360px;margin:0 auto;padding:16px}
@@ -124,7 +47,7 @@
     .card .hd .hint{font-size:12px;color:var(--muted);margin-top:2px}
     .card .bd{padding:12px 14px 14px 14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input[type="date"], input[type="number"], input[type="text"], select{
+    input[type="date"], input[type="number"], input[type="text"], input[type="password"], select{
       border:1px solid var(--bd);border-radius:10px;padding:9px 10px;font-size:13px;background:#fff;min-height:36px;
     }
     input[type="number"]{font-family:var(--mono)}
@@ -198,470 +121,480 @@
       box-shadow:0 10px 25px rgba(0,0,0,.18);display:none;white-space:nowrap;
     }
     .tip b{font-family:var(--mono)}
+    .empty-state{
+      border:1px dashed #cbd5e1;border-radius:16px;background:#fff;padding:28px 18px;text-align:center;color:#475569;
+    }
+    .empty-state h3{margin:0 0 8px 0;font-size:16px}
+    .empty-state p{margin:0;font-size:13px;color:#64748b}
   </style>
 </head>
 
 <body>
-  <section id="loginScreen">
-    <div class="login-box">
-      <h1>강사보고서 로그인</h1>
-      <p class="login-sub">로그인하면 같은 페이지 안에서 바로 메인 화면으로 전환돼.</p>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>강사보고서 독립웹앱 v4.4.1</h1>
+        <div class="sub">✅ 모집DB=Owned+Paid · DB당가치=실매출/모집DB · 예상매출=이전기수 DB당가치×현기수 모집DB</div>
+      </div>
+      <div class="actions">
+        <span class="pill">현재 프로젝트: <b id="curProjLabel">없음</b></span>
+        <span class="pill"><b id="statDates">0</b>일</span>
+        <span class="pill">로그인: <b id="authStatus">미로그인</b></span>
+        <button id="btnLogout" style="display:none">로그아웃</button>
+        <button id="btnReset" class="btn-danger">전체 초기화</button>
+        <button id="btnRecalc" class="btn-primary">재계산</button>
+      </div>
+    </div>
 
-      <label class="login-label" for="loginId">아이디</label>
-      <input id="loginId" type="text" value="classaround" placeholder="아이디"/>
+    <div class="row" style="margin-top:10px">
+      <label class="small">프로젝트(강사+기수)</label>
+      <select id="projSelect" style="min-width:260px"></select>
+      <button id="btnNewProj" class="btn-primary">새 프로젝트</button>
+      <button id="btnDupProj">복제</button>
+      <button id="btnDelProj" class="btn-danger">삭제</button>
 
-      <label class="login-label" for="loginPw">비밀번호</label>
-      <input id="loginPw" type="password" placeholder="비밀번호"/>
+      <span class="badge">강사: <b id="curInstructor">-</b></span>
+      <span class="badge">기수: <b id="curCohort">-</b></span>
+    </div>
+  </div>
+</header>
 
-      <button id="btnLogin" class="btn-primary login-btn">로그인</button>
-      <div id="loginMsg" class="login-msg"></div>
+<main>
+  <div class="tabs">
+    <button class="tab active" data-tab="main">메인(시뮬)</button>
+    <button class="tab" data-tab="owned">온드DB</button>
+    <button class="tab" data-tab="ads">광고DB</button>
+    <button class="tab" data-tab="compare">강사/기수 비교</button>
+    <button class="tab" data-tab="settings">설정/이전기수/매출</button>
+  </div>
 
-      <div class="login-hint">
-        아이디는 <b>classaround</b> 고정, 실제 내부 로그인 계정은 <b>classaround@gmail.com</b> 으로 연결됨.
+  <section id="view-main" class="grid">
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>메인 시뮬레이션 표</h2>
+          <div class="hint">전체DB(=모집DB) / PaidDB / OwnedDB / 예상매출 + 예산 사용(일자별 추이)</div>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <label class="small">날짜 범위(옵션)</label>
+          <input type="date" id="rangeStart"/>
+          <input type="date" id="rangeEnd"/>
+          <button id="btnSaveRange" class="btn-primary">범위 저장</button>
+          <span class="small">비우면 “데이터가 있는 날짜만” 생성</span>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="kpi">
+          <div class="box">
+            <div class="lbl">모집DB(전체, 누적)</div>
+            <div class="val" id="kpiTotalDb">0</div>
+            <div class="sub">Owned 누적 + Paid 누적</div>
+          </div>
+          <div class="box">
+            <div class="lbl">Paid DB(누적)</div>
+            <div class="val" id="kpiPaidDb">0</div>
+            <div class="sub">광고DB 실DB(전환) 누적</div>
+          </div>
+          <div class="box">
+            <div class="lbl">Owned DB(누적)</div>
+            <div class="val" id="kpiOwnedDb">0</div>
+            <div class="sub">온드DB 추가DB 누적</div>
+          </div>
+          <div class="box">
+            <div class="lbl">예상 매출액(누적)</div>
+            <div class="val" id="kpiExpectedRev">₩0</div>
+            <div class="sub">이전기수 DB당가치 × 현기수 모집DB(누적)</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="twoCol">
+          <div class="chartBox">
+            <div class="chartHead">
+              <div>
+                <div style="font-weight:900;font-size:13px">누적 DB 추이 (Owned / Paid / 모집DB)</div>
+                <div class="small">라인 (마우스 올리면 날짜/값)</div>
+              </div>
+              <div class="legend">
+                <span><span class="dot" style="background:rgba(37,99,235,.95)"></span>Owned</span>
+                <span><span class="dot" style="background:rgba(16,185,129,.95)"></span>Paid</span>
+                <span><span class="dot" style="background:rgba(15,23,42,.85)"></span>모집DB</span>
+              </div>
+            </div>
+            <canvas id="chartDb"></canvas>
+          </div>
+
+          <div class="chartBox">
+            <div class="chartHead">
+              <div>
+                <div style="font-weight:900;font-size:13px">일자별 사용예산 추이</div>
+                <div class="small">스무딩 라인 + 포인트 + 기준선(일예산)</div>
+              </div>
+              <div class="legend">
+                <span><span class="dot" style="background:rgba(37,99,235,.35)"></span>일사용예산</span>
+                <span><span class="dot" style="background:rgba(15,23,42,.40)"></span>일예산</span>
+              </div>
+            </div>
+            <canvas id="chartDailySpend"></canvas>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sticky">날짜</th>
+                <th class="num">Owned(누적)</th>
+                <th class="num">Paid(누적)</th>
+                <th class="num">모집DB(누적)</th>
+                <th class="num">일예산</th>
+                <th class="num">일사용예산</th>
+                <th class="num">누적사용예산</th>
+                <th class="center">예산사용현황</th>
+                <th class="num">예상매출(누적)</th>
+              </tr>
+            </thead>
+            <tbody id="mainTbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </section>
 
-  <div id="appScreen">
-    <header>
-      <div class="wrap">
-        <div class="topbar">
-          <div class="title">
-            <h1>강사보고서 독립웹앱 v4.4.1</h1>
-            <div class="sub">✅ 모집DB=Owned+Paid · DB당가치=실매출/모집DB · 예상매출=이전기수 DB당가치×현기수 모집DB</div>
-          </div>
-          <div class="actions">
-            <span class="pill">현재 프로젝트: <b id="curProjLabel">없음</b></span>
-            <span class="pill"><b id="statDates">0</b>일</span>
-            <span class="pill">로그인: <b id="authStatus">-</b></span>
-            <button id="btnLogout">로그아웃</button>
-            <button id="btnReset" class="btn-danger">전체 초기화</button>
-            <button id="btnRecalc" class="btn-primary">재계산</button>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <label class="small">프로젝트(강사+기수)</label>
-          <select id="projSelect" style="min-width:260px"></select>
-          <button id="btnNewProj" class="btn-primary">새 프로젝트</button>
-          <button id="btnDupProj">복제</button>
-          <button id="btnDelProj" class="btn-danger">삭제</button>
-
-          <span class="badge">강사: <b id="curInstructor">-</b></span>
-          <span class="badge">기수: <b id="curCohort">-</b></span>
+  <section id="view-owned" class="grid" style="display:none">
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>온드DB (매체별 필터)</h2>
+          <div class="hint">엑셀 업로드: D=매체, H=신청일 → (일자×매체) 카운트</div>
         </div>
       </div>
-    </header>
+      <div class="bd">
+        <div class="row">
+          <button id="btnOwnedXlsx" class="btn-primary">엑셀(.xlsx) 업로드</button>
+          <button id="btnOwnedCsv" class="btn-primary">CSV 업로드(대안)</button>
+          <label class="small">매체 필터</label>
+          <select id="ownedFilter"></select>
+        </div>
 
-    <main>
-      <div class="tabs">
-        <button class="tab active" data-tab="main">메인(시뮬)</button>
-        <button class="tab" data-tab="owned">온드DB</button>
-        <button class="tab" data-tab="ads">광고DB</button>
-        <button class="tab" data-tab="compare">강사/기수 비교</button>
-        <button class="tab" data-tab="settings">설정/이전기수/매출</button>
+        <div class="sep"></div>
+
+        <div class="row">
+          <input type="date" id="ownedDate"/>
+          <input type="text" id="ownedMedia" placeholder="온드 매체" style="min-width:240px"/>
+          <input type="number" id="ownedAddDb" placeholder="추가DB" min="0" step="1"/>
+          <button id="btnAddOwned" class="btn-primary">추가/업데이트</button>
+          <button id="btnDelOwned">삭제</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="table-wrap">
+          <table style="min-width:820px">
+            <thead>
+              <tr>
+                <th class="sticky">날짜</th>
+                <th>매체</th>
+                <th class="num">추가DB</th>
+              </tr>
+            </thead>
+            <tbody id="ownedTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-ads" class="grid" style="display:none">
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>광고DB (구글/메타 + 평균 지표)</h2>
+          <div class="hint">CSV 업로드: B(일자), I(클릭), C(실DB), F(광고비) → 날짜별 합산</div>
+        </div>
       </div>
 
-      <section id="view-main" class="grid">
-        <div class="card">
-          <div class="hd">
-            <div>
-              <h2>메인 시뮬레이션 표</h2>
-              <div class="hint">전체DB(=모집DB) / PaidDB / OwnedDB / 예상매출 + 예산 사용(일자별 추이)</div>
+      <div class="bd">
+        <div class="row">
+          <button id="btnMetaCsv" class="btn-primary">메타 CSV 업로드</button>
+          <button id="btnGoogleCsv" class="btn-primary">구글 CSV 업로드</button>
+          <label class="small">매체 필터</label>
+          <select id="adsFilter">
+            <option value="all">전체</option>
+            <option value="google">구글</option>
+            <option value="meta">메타</option>
+          </select>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="kpi">
+          <div class="box">
+            <div class="lbl">평균 CPC</div>
+            <div class="val" id="kpiAvgCpc">₩0</div>
+            <div class="sub">총예산 / 총클릭</div>
+          </div>
+          <div class="box">
+            <div class="lbl">평균 전환당 단가(CPA)</div>
+            <div class="val" id="kpiAvgCpa">₩0</div>
+            <div class="sub">총예산 / 총전환(실DB)</div>
+          </div>
+          <div class="box">
+            <div class="lbl">전환/클릭율(CVR)</div>
+            <div class="val" id="kpiCvr">0.00%</div>
+            <div class="sub">총전환 / 총클릭</div>
+          </div>
+          <div class="box">
+            <div class="lbl">총 사용예산</div>
+            <div class="val" id="kpiAdSpend">₩0</div>
+            <div class="sub">필터 적용</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <input type="date" id="adsDate"/>
+          <select id="adsPlatform">
+            <option value="google">구글</option>
+            <option value="meta">메타</option>
+          </select>
+          <input type="number" id="adsSpend" placeholder="사용예산(원)" min="0" step="1"/>
+          <input type="number" id="adsClicks" placeholder="클릭" min="0" step="1"/>
+          <input type="number" id="adsRealDb" placeholder="실DB(전환)" min="0" step="1"/>
+          <button id="btnAddAds" class="btn-primary">추가/업데이트</button>
+          <button id="btnDelAds">삭제</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="table-wrap">
+          <table style="min-width:1100px">
+            <thead>
+              <tr>
+                <th class="sticky">날짜</th>
+                <th>매체</th>
+                <th class="num">사용예산</th>
+                <th class="num">클릭</th>
+                <th class="num">전환(실DB)</th>
+                <th class="num">CPC</th>
+                <th class="num">전환당단가(CPA)</th>
+                <th class="center">전환/클릭율(CVR)</th>
+              </tr>
+            </thead>
+            <tbody id="adsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-compare" class="grid" style="display:none">
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>강사/기수 비교 (VS + 그래프)</h2>
+          <div class="hint">좌/우 프로젝트 VS + 아래 막대그래프(툴팁/정렬/필터)로 한눈에 비교</div>
+        </div>
+      </div>
+
+      <div class="bd">
+        <div class="vsWrap">
+          <div class="vsTop">
+            <div class="vsSide">
+              <label class="small" style="font-weight:900">좌측</label>
+              <select id="cmpLeftProj" style="min-width:260px"></select>
+              <span id="cmpLeftTitle" class="projTitle blue">-</span>
+            </div>
+            <div class="vsCenter"><div class="vsPill">VS</div></div>
+            <div class="vsSide right">
+              <span id="cmpRightTitle" class="projTitle red">-</span>
+              <select id="cmpRightProj" style="min-width:260px"></select>
+              <label class="small" style="font-weight:900">우측</label>
             </div>
           </div>
-          <div class="bd">
+
+          <div class="table-wrap" style="border:none;border-radius:0">
+            <table class="vsTable">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding-left:16px">좌측 값</th>
+                  <th>항목</th>
+                  <th style="text-align:right;padding-right:16px">우측 값</th>
+                </tr>
+              </thead>
+              <tbody id="cmpVsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="cmpControls">
+          <div class="group">
+            <label>그래프 보기</label>
+            <select id="cmpMode">
+              <option value="project">기수(프로젝트)별</option>
+              <option value="instructor">강사별(합산)</option>
+            </select>
+          </div>
+
+          <div class="group">
+            <label>강사 필터</label>
+            <select id="cmpInstructorFilter" style="min-width:180px"></select>
+          </div>
+
+          <div class="group">
+            <label>지표</label>
+            <select id="cmpMetric" style="min-width:220px"></select>
+          </div>
+
+          <div class="group">
+            <label>정렬</label>
+            <select id="cmpSort">
+              <option value="desc">내림차순</option>
+              <option value="asc">오름차순</option>
+              <option value="name">이름순</option>
+            </select>
+          </div>
+
+          <button id="btnApplyCompare" class="btn-primary">적용</button>
+          <span class="small">막대 위 숫자는 겹치지 않게 자동 배치</span>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="cmpGraphWrap">
+          <div class="cmpGraphTitle" id="cmpGraphTitle">-</div>
+          <div class="cmpGraphSub" id="cmpGraphSub">막대 위에 마우스를 올리면 툴팁</div>
+          <canvas id="chartCompare"></canvas>
+
+          <div class="sep"></div>
+          <div class="note">
+            <b>지표 정의(v4.4.1)</b><br/>
+            - 평균CPC = 총예산 / 총클릭<br/>
+            - 평균CPA = 총예산 / PaidDB(전환)<br/>
+            - CVR = PaidDB / 총클릭<br/>
+            - ROAS(실매출 기준) = 실매출 / 총예산<br/>
+            - <b>DB당 가치</b> = 해당기수 실매출 / 해당기수 모집DB(=Owned+Paid)<br/>
+            - <b>예상매출</b> = <b>이전기수 DB당 가치</b> × 현기수 모집DB(누적)
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-settings" class="grid" style="display:none">
+    <div class="card">
+      <div class="hd">
+        <div>
+          <h2>설정 / 이전기수 연결 / 매출 입력</h2>
+          <div class="hint">일예산, 이전기수 연결(선택/직입), 실제매출 입력 (DB당가치 자동)</div>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="threeCol">
+          <div class="chartBox">
+            <div style="font-weight:900;margin-bottom:8px">현재 기수 설정</div>
             <div class="row">
-              <label class="small">날짜 범위(옵션)</label>
-              <input type="date" id="rangeStart"/>
-              <input type="date" id="rangeEnd"/>
-              <button id="btnSaveRange" class="btn-primary">범위 저장</button>
-              <span class="small">비우면 “데이터가 있는 날짜만” 생성</span>
+              <label class="small">일예산(원)</label>
+              <input type="number" id="cfgDailyBudget" min="0" step="1000" style="min-width:220px"/>
             </div>
-
-            <div class="sep"></div>
-
-            <div class="kpi">
-              <div class="box">
-                <div class="lbl">모집DB(전체, 누적)</div>
-                <div class="val" id="kpiTotalDb">0</div>
-                <div class="sub">Owned 누적 + Paid 누적</div>
-              </div>
-              <div class="box">
-                <div class="lbl">Paid DB(누적)</div>
-                <div class="val" id="kpiPaidDb">0</div>
-                <div class="sub">광고DB 실DB(전환) 누적</div>
-              </div>
-              <div class="box">
-                <div class="lbl">Owned DB(누적)</div>
-                <div class="val" id="kpiOwnedDb">0</div>
-                <div class="sub">온드DB 추가DB 누적</div>
-              </div>
-              <div class="box">
-                <div class="lbl">예상 매출액(누적)</div>
-                <div class="val" id="kpiExpectedRev">₩0</div>
-                <div class="sub">이전기수 DB당가치 × 현기수 모집DB(누적)</div>
-              </div>
+            <div class="row" style="margin-top:8px">
+              <label class="small">DB당 가치(자동)</label>
+              <input type="number" id="cfgValuePerDb" readonly style="min-width:220px"/>
+              <span class="small">= 실매출 / 모집DB(Owned+Paid)</span>
             </div>
-
-            <div class="sep"></div>
-
-            <div class="twoCol">
-              <div class="chartBox">
-                <div class="chartHead">
-                  <div>
-                    <div style="font-weight:900;font-size:13px">누적 DB 추이 (Owned / Paid / 모집DB)</div>
-                    <div class="small">라인 (마우스 올리면 날짜/값)</div>
-                  </div>
-                  <div class="legend">
-                    <span><span class="dot" style="background:rgba(37,99,235,.95)"></span>Owned</span>
-                    <span><span class="dot" style="background:rgba(16,185,129,.95)"></span>Paid</span>
-                    <span><span class="dot" style="background:rgba(15,23,42,.85)"></span>모집DB</span>
-                  </div>
-                </div>
-                <canvas id="chartDb"></canvas>
-              </div>
-
-              <div class="chartBox">
-                <div class="chartHead">
-                  <div>
-                    <div style="font-weight:900;font-size:13px">일자별 사용예산 추이</div>
-                    <div class="small">스무딩 라인 + 포인트 + 기준선(일예산)</div>
-                  </div>
-                  <div class="legend">
-                    <span><span class="dot" style="background:rgba(37,99,235,.35)"></span>일사용예산</span>
-                    <span><span class="dot" style="background:rgba(15,23,42,.40)"></span>일예산</span>
-                  </div>
-                </div>
-                <canvas id="chartDailySpend"></canvas>
-              </div>
+            <div class="row" style="margin-top:8px">
+              <button id="btnSaveCfg" class="btn-primary">저장</button>
             </div>
-
             <div class="sep"></div>
+            <div class="note">
+              v4.4.1: DB당 가치는 수동 입력이 아니라 “실매출/모집DB(Owned+Paid)”로 자동 계산됩니다.
+            </div>
+          </div>
 
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="sticky">날짜</th>
-                    <th class="num">Owned(누적)</th>
-                    <th class="num">Paid(누적)</th>
-                    <th class="num">모집DB(누적)</th>
-                    <th class="num">일예산</th>
-                    <th class="num">일사용예산</th>
-                    <th class="num">누적사용예산</th>
-                    <th class="center">예산사용현황</th>
-                    <th class="num">예상매출(누적)</th>
-                  </tr>
-                </thead>
-                <tbody id="mainTbody"></tbody>
-              </table>
+          <div class="chartBox">
+            <div style="font-weight:900;margin-bottom:8px">이전 기수 연결</div>
+            <div class="row">
+              <label class="small">이전기수(프로젝트) 선택</label>
+              <select id="prevProjSelect" style="min-width:260px"></select>
+              <button id="btnLinkPrev" class="btn-primary">연결</button>
+              <button id="btnUnlinkPrev">해제</button>
+            </div>
+            <div class="sep"></div>
+            <div class="row">
+              <label class="small">또는 수동 입력(연결 안할 때)</label>
+            </div>
+            <div class="row">
+              <input type="number" id="prevDb" placeholder="이전기수 모집DB(최종=Owned+Paid)" min="0" step="1"/>
+              <input type="number" id="prevSpend" placeholder="이전기수 총예산(참고)" min="0" step="1"/>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <input type="number" id="prevRevenue" placeholder="이전기수 실매출(참고)" min="0" step="1"/>
+              <button id="btnSavePrevManual" class="btn-primary">수동값 저장</button>
+            </div>
+            <div class="sep"></div>
+            <div class="note" id="prevLinkInfo">현재: 이전기수 미연결</div>
+          </div>
+
+          <div class="chartBox">
+            <div style="font-weight:900;margin-bottom:8px">현재 기수 “실매출(최종 결제매출)” 입력</div>
+            <div class="row">
+              <label class="small">실매출(원)</label>
+              <input type="number" id="actualRevenue" min="0" step="1000" style="min-width:240px"/>
+              <button id="btnSaveActualRevenue" class="btn-primary">저장</button>
+            </div>
+            <div class="sep"></div>
+            <div class="note" id="revenueCompareBox">
+              실매출/DB당가치/예상매출/이전기수 DB당가치 비교가 여기 표시됨
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+  </section>
+</main>
 
-      <section id="view-owned" class="grid" style="display:none">
-        <div class="card">
-          <div class="hd">
-            <div>
-              <h2>온드DB (매체별 필터)</h2>
-              <div class="hint">엑셀 업로드: D=매체, H=신청일 → (일자×매체) 카운트</div>
-            </div>
-          </div>
-          <div class="bd">
-            <div class="row">
-              <button id="btnOwnedXlsx" class="btn-primary">엑셀(.xlsx) 업로드</button>
-              <button id="btnOwnedCsv" class="btn-primary">CSV 업로드(대안)</button>
-              <label class="small">매체 필터</label>
-              <select id="ownedFilter"></select>
-            </div>
+<div id="loginOverlay" style="
+  position:fixed; inset:0; background:rgba(15,23,42,.45);
+  display:none; align-items:center; justify-content:center; z-index:9998;
+">
+  <div style="
+    width:min(420px, calc(100vw - 32px));
+    background:#fff; border:1px solid #e5e7eb; border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.18); padding:22px;
+  ">
+    <div style="font-size:18px;font-weight:900;margin-bottom:6px">로그인</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:16px">
+      저장된 데이터를 보려면 로그인해야 합니다.
+    </div>
 
-            <div class="sep"></div>
-
-            <div class="row">
-              <input type="date" id="ownedDate"/>
-              <input type="text" id="ownedMedia" placeholder="온드 매체" style="min-width:240px"/>
-              <input type="number" id="ownedAddDb" placeholder="추가DB" min="0" step="1"/>
-              <button id="btnAddOwned" class="btn-primary">추가/업데이트</button>
-              <button id="btnDelOwned">삭제</button>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="table-wrap">
-              <table style="min-width:820px">
-                <thead>
-                  <tr>
-                    <th class="sticky">날짜</th>
-                    <th>매체</th>
-                    <th class="num">추가DB</th>
-                  </tr>
-                </thead>
-                <tbody id="ownedTbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-ads" class="grid" style="display:none">
-        <div class="card">
-          <div class="hd">
-            <div>
-              <h2>광고DB (구글/메타 + 평균 지표)</h2>
-              <div class="hint">CSV 업로드: B(일자), I(클릭), C(실DB), F(광고비) → 날짜별 합산</div>
-            </div>
-          </div>
-
-          <div class="bd">
-            <div class="row">
-              <button id="btnMetaCsv" class="btn-primary">메타 CSV 업로드</button>
-              <button id="btnGoogleCsv" class="btn-primary">구글 CSV 업로드</button>
-              <label class="small">매체 필터</label>
-              <select id="adsFilter">
-                <option value="all">전체</option>
-                <option value="google">구글</option>
-                <option value="meta">메타</option>
-              </select>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="kpi">
-              <div class="box">
-                <div class="lbl">평균 CPC</div>
-                <div class="val" id="kpiAvgCpc">₩0</div>
-                <div class="sub">총예산 / 총클릭</div>
-              </div>
-              <div class="box">
-                <div class="lbl">평균 전환당 단가(CPA)</div>
-                <div class="val" id="kpiAvgCpa">₩0</div>
-                <div class="sub">총예산 / 총전환(실DB)</div>
-              </div>
-              <div class="box">
-                <div class="lbl">전환/클릭율(CVR)</div>
-                <div class="val" id="kpiCvr">0.00%</div>
-                <div class="sub">총전환 / 총클릭</div>
-              </div>
-              <div class="box">
-                <div class="lbl">총 사용예산</div>
-                <div class="val" id="kpiAdSpend">₩0</div>
-                <div class="sub">필터 적용</div>
-              </div>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="row">
-              <input type="date" id="adsDate"/>
-              <select id="adsPlatform">
-                <option value="google">구글</option>
-                <option value="meta">메타</option>
-              </select>
-              <input type="number" id="adsSpend" placeholder="사용예산(원)" min="0" step="1"/>
-              <input type="number" id="adsClicks" placeholder="클릭" min="0" step="1"/>
-              <input type="number" id="adsRealDb" placeholder="실DB(전환)" min="0" step="1"/>
-              <button id="btnAddAds" class="btn-primary">추가/업데이트</button>
-              <button id="btnDelAds">삭제</button>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="table-wrap">
-              <table style="min-width:1100px">
-                <thead>
-                  <tr>
-                    <th class="sticky">날짜</th>
-                    <th>매체</th>
-                    <th class="num">사용예산</th>
-                    <th class="num">클릭</th>
-                    <th class="num">전환(실DB)</th>
-                    <th class="num">CPC</th>
-                    <th class="num">전환당단가(CPA)</th>
-                    <th class="center">전환/클릭율(CVR)</th>
-                  </tr>
-                </thead>
-                <tbody id="adsTbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-compare" class="grid" style="display:none">
-        <div class="card">
-          <div class="hd">
-            <div>
-              <h2>강사/기수 비교 (VS + 그래프)</h2>
-              <div class="hint">좌/우 프로젝트 VS + 아래 막대그래프(툴팁/정렬/필터)로 한눈에 비교</div>
-            </div>
-          </div>
-
-          <div class="bd">
-            <div class="vsWrap">
-              <div class="vsTop">
-                <div class="vsSide">
-                  <label class="small" style="font-weight:900">좌측</label>
-                  <select id="cmpLeftProj" style="min-width:260px"></select>
-                  <span id="cmpLeftTitle" class="projTitle blue">-</span>
-                </div>
-                <div class="vsCenter"><div class="vsPill">VS</div></div>
-                <div class="vsSide right">
-                  <span id="cmpRightTitle" class="projTitle red">-</span>
-                  <select id="cmpRightProj" style="min-width:260px"></select>
-                  <label class="small" style="font-weight:900">우측</label>
-                </div>
-              </div>
-
-              <div class="table-wrap" style="border:none;border-radius:0">
-                <table class="vsTable">
-                  <thead>
-                    <tr>
-                      <th style="text-align:left;padding-left:16px">좌측 값</th>
-                      <th>항목</th>
-                      <th style="text-align:right;padding-right:16px">우측 값</th>
-                    </tr>
-                  </thead>
-                  <tbody id="cmpVsTbody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="cmpControls">
-              <div class="group">
-                <label>그래프 보기</label>
-                <select id="cmpMode">
-                  <option value="project">기수(프로젝트)별</option>
-                  <option value="instructor">강사별(합산)</option>
-                </select>
-              </div>
-
-              <div class="group">
-                <label>강사 필터</label>
-                <select id="cmpInstructorFilter" style="min-width:180px"></select>
-              </div>
-
-              <div class="group">
-                <label>지표</label>
-                <select id="cmpMetric" style="min-width:220px"></select>
-              </div>
-
-              <div class="group">
-                <label>정렬</label>
-                <select id="cmpSort">
-                  <option value="desc">내림차순</option>
-                  <option value="asc">오름차순</option>
-                  <option value="name">이름순</option>
-                </select>
-              </div>
-
-              <button id="btnApplyCompare" class="btn-primary">적용</button>
-              <span class="small">막대 위 숫자는 겹치지 않게 자동 배치</span>
-            </div>
-
-            <div style="height:10px"></div>
-
-            <div class="cmpGraphWrap">
-              <div class="cmpGraphTitle" id="cmpGraphTitle">-</div>
-              <div class="cmpGraphSub" id="cmpGraphSub">막대 위에 마우스를 올리면 툴팁</div>
-              <canvas id="chartCompare"></canvas>
-
-              <div class="sep"></div>
-              <div class="note">
-                <b>지표 정의(v4.4.1)</b><br/>
-                - 평균CPC = 총예산 / 총클릭<br/>
-                - 평균CPA = 총예산 / PaidDB(전환)<br/>
-                - CVR = PaidDB / 총클릭<br/>
-                - ROAS(실매출 기준) = 실매출 / 총예산<br/>
-                - <b>DB당 가치</b> = 해당기수 실매출 / 해당기수 모집DB(=Owned+Paid)<br/>
-                - <b>예상매출</b> = <b>이전기수 DB당 가치</b> × 현기수 모집DB(누적)
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="view-settings" class="grid" style="display:none">
-        <div class="card">
-          <div class="hd">
-            <div>
-              <h2>설정 / 이전기수 연결 / 매출 입력</h2>
-              <div class="hint">일예산, 이전기수 연결(선택/직입), 실제매출 입력 (DB당가치 자동)</div>
-            </div>
-          </div>
-          <div class="bd">
-            <div class="threeCol">
-              <div class="chartBox">
-                <div style="font-weight:900;margin-bottom:8px">현재 기수 설정</div>
-                <div class="row">
-                  <label class="small">일예산(원)</label>
-                  <input type="number" id="cfgDailyBudget" min="0" step="1000" style="min-width:220px"/>
-                </div>
-                <div class="row" style="margin-top:8px">
-                  <label class="small">DB당 가치(자동)</label>
-                  <input type="number" id="cfgValuePerDb" readonly style="min-width:220px"/>
-                  <span class="small">= 실매출 / 모집DB(Owned+Paid)</span>
-                </div>
-                <div class="row" style="margin-top:8px">
-                  <button id="btnSaveCfg" class="btn-primary">저장</button>
-                </div>
-                <div class="sep"></div>
-                <div class="note">
-                  v4.4.1: DB당 가치는 수동 입력이 아니라 “실매출/모집DB(Owned+Paid)”로 자동 계산됩니다.
-                </div>
-              </div>
-
-              <div class="chartBox">
-                <div style="font-weight:900;margin-bottom:8px">이전 기수 연결</div>
-                <div class="row">
-                  <label class="small">이전기수(프로젝트) 선택</label>
-                  <select id="prevProjSelect" style="min-width:260px"></select>
-                  <button id="btnLinkPrev" class="btn-primary">연결</button>
-                  <button id="btnUnlinkPrev">해제</button>
-                </div>
-                <div class="sep"></div>
-                <div class="row">
-                  <label class="small">또는 수동 입력(연결 안할 때)</label>
-                </div>
-                <div class="row">
-                  <input type="number" id="prevDb" placeholder="이전기수 모집DB(최종=Owned+Paid)" min="0" step="1"/>
-                  <input type="number" id="prevSpend" placeholder="이전기수 총예산(참고)" min="0" step="1"/>
-                </div>
-                <div class="row" style="margin-top:8px">
-                  <input type="number" id="prevRevenue" placeholder="이전기수 실매출(참고)" min="0" step="1"/>
-                  <button id="btnSavePrevManual" class="btn-primary">수동값 저장</button>
-                </div>
-                <div class="sep"></div>
-                <div class="note" id="prevLinkInfo">현재: 이전기수 미연결</div>
-              </div>
-
-              <div class="chartBox">
-                <div style="font-weight:900;margin-bottom:8px">현재 기수 “실매출(최종 결제매출)” 입력</div>
-                <div class="row">
-                  <label class="small">실매출(원)</label>
-                  <input type="number" id="actualRevenue" min="0" step="1000" style="min-width:240px"/>
-                  <button id="btnSaveActualRevenue" class="btn-primary">저장</button>
-                </div>
-                <div class="sep"></div>
-                <div class="note" id="revenueCompareBox">
-                  실매출/DB당가치/예상매출/이전기수 DB당가치 비교가 여기 표시됨
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    <div style="display:grid;gap:10px">
+      <input id="loginId" type="text" placeholder="아이디" value="classaround"/>
+      <input id="loginPw" type="password" placeholder="비밀번호"/>
+      <button id="btnLogin" class="btn-primary">로그인</button>
+      <div id="loginMsg" style="font-size:12px;color:#dc2626;min-height:18px"></div>
+    </div>
   </div>
+</div>
 
-  <input id="fileInput" type="file" accept=".csv,.tsv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none"/>
-  <div id="tooltip" class="tip"></div>
+<input id="fileInput" type="file" accept=".csv,.tsv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none"/>
+<div id="tooltip" class="tip"></div>
 
 <script>
+/** =========================
+ *  Supabase 설정
+ *  ========================= */
 const UI_LS_KEY = 'INDEPENDENT_REPORT_V441_UI_ONLY';
+
 const SUPABASE_URL = 'https://eaukbojyuygwhkaxdvnx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhdWtib2p5dXlnd2hrYXhkdm54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTk0OTMsImV4cCI6MjA4ODc3NTQ5M30.0IAiljx47666xWxJq5N_kDmjPUpESmibPqEjDtb2TRc';
 
@@ -672,6 +605,9 @@ const LOGIN_ID_MAP = {
   classaround: 'classaround@gmail.com'
 };
 
+/** =========================
+ *  공통 유틸
+ *  ========================= */
 function nowId(){ return 'p_' + Math.random().toString(16).slice(2) + '_' + Date.now().toString(16); }
 function esc(s){ return String(s)
   .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
@@ -727,6 +663,9 @@ function normalizeDateFromAny(v){
 }
 function deepClone(v){ return JSON.parse(JSON.stringify(v)); }
 
+/** =========================
+ *  상태 / UI 저장
+ *  ========================= */
 function defaultCompare(projectId=''){
   return {
     leftId: projectId || '',
@@ -761,6 +700,9 @@ function saveState(){
 }
 const state = loadState();
 
+/** =========================
+ *  인증
+ *  ========================= */
 async function ensureAuth(){
   const { data:{session}, error } = await sb.auth.getSession();
   if(error) throw error;
@@ -784,31 +726,30 @@ async function loginWithIdPassword(id, password){
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if(error) throw error;
+
   authSession = data.session || null;
   return data;
 }
-async function signOutUser(){
+async function logout(){
   const { error } = await sb.auth.signOut();
   if(error) throw error;
   authSession = null;
 }
 function requireLogin(){
-  if(!isLoggedIn()) throw new Error('로그인이 필요해.');
+  if(!isLoggedIn()){
+    updateAuthUi();
+    throw new Error('로그인이 필요해.');
+  }
 }
-function loginLabel(){
+function loginIdLabelFromSession(){
   const email = authSession?.user?.email || '';
   if(email === 'classaround@gmail.com') return 'classaround';
-  return email || '-';
-}
-function showLoginScreen(){
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appScreen').style.display = 'none';
-}
-function showAppScreen(){
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appScreen').style.display = 'block';
+  return email || '';
 }
 
+/** =========================
+ *  DB 매핑
+ *  ========================= */
 function mapProjectRowToState(projectRow, ownedRows, adsRows){
   return {
     id: projectRow.id,
@@ -848,26 +789,37 @@ function mapProjectRowToState(projectRow, ownedRows, adsRows){
   };
 }
 
+/** =========================
+ *  DB 로드 / CRUD
+ *  ========================= */
 async function loadStateFromDb(){
   await ensureAuth();
-  requireLogin();
+
+  if(!isLoggedIn()){
+    state.projects = {};
+    state.currentProjectId = '';
+    return;
+  }
 
   const { data:projects, error:pErr } = await sb
     .from('projects')
     .select('*')
     .order('created_at', { ascending:true });
+
   if(pErr) throw pErr;
 
   const { data:ownedRows, error:oErr } = await sb
     .from('owned_entries')
     .select('*')
     .order('entry_date', { ascending:true });
+
   if(oErr) throw oErr;
 
   const { data:adsRows, error:aErr } = await sb
     .from('ads_entries')
     .select('*')
     .order('entry_date', { ascending:true });
+
   if(aErr) throw aErr;
 
   state.projects = {};
@@ -964,6 +916,7 @@ async function deleteProjectOnDb(projectId){
   if(error) throw error;
 
   delete state.projects[projectId];
+
   const ids = Object.keys(state.projects);
   state.currentProjectId = ids[0] || '';
 
@@ -972,7 +925,6 @@ async function deleteProjectOnDb(projectId){
     if(!state.projects[state.compare.leftId]) state.compare.leftId = state.currentProjectId;
     if(!state.projects[state.compare.rightId]) state.compare.rightId = state.currentProjectId;
   }
-
   saveState();
 }
 async function clearAllDataOnDb(){
@@ -1030,7 +982,9 @@ async function deleteOwnedOnDb(projectId, date, media){
   if(error) throw error;
 
   const p = state.projects[projectId];
-  p.ownedEntries = p.ownedEntries.filter(x => !(x.date === date && (x.media||'').trim() === media));
+  p.ownedEntries = p.ownedEntries.filter(x => !(
+    x.date === date && (x.media||'').trim() === media
+  ));
 }
 async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   await ensureAuth();
@@ -1055,7 +1009,13 @@ async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   const p = state.projects[projectId];
   const key = `${date}||${platform}`;
   const idx = p.adsEntries.findIndex(x => `${x.date}||${x.platform}` === key);
-  const rec = { date, platform, spend:Number(spend||0), clicks:Number(clicks||0), realDb:Number(realDb||0) };
+  const rec = {
+    date,
+    platform,
+    spend:Number(spend || 0),
+    clicks:Number(clicks || 0),
+    realDb:Number(realDb || 0)
+  };
   if(idx>=0) p.adsEntries[idx] = rec;
   else p.adsEntries.push(rec);
 }
@@ -1140,12 +1100,10 @@ async function bulkUpsertAdsOnDb(projectId, rows){
   p.adsEntries = [...m.values()];
 }
 
+/** =========================
+ *  DOM
+ *  ========================= */
 const $ = (id)=>document.getElementById(id);
-
-const loginId = $('loginId');
-const loginPw = $('loginPw');
-const btnLogin = $('btnLogin');
-const loginMsg = $('loginMsg');
 
 const curProjLabel = $('curProjLabel');
 const statDates = $('statDates');
@@ -1227,11 +1185,20 @@ const actualRevenue = $('actualRevenue');
 const btnSaveActualRevenue = $('btnSaveActualRevenue');
 const revenueCompareBox = $('revenueCompareBox');
 
+const loginOverlay = $('loginOverlay');
+const loginId = $('loginId');
+const loginPw = $('loginPw');
+const btnLogin = $('btnLogin');
+const loginMsg = $('loginMsg');
+
 const fileInput = $('fileInput');
 const tip = $('tooltip');
 const chartDb = $('chartDb');
 const chartDailySpend = $('chartDailySpend');
 
+/** =========================
+ *  Tooltip
+ *  ========================= */
 function showTip(x,y,lines,color){
   tip.style.display='block';
   tip.style.left = x+'px';
@@ -1243,6 +1210,9 @@ function showTip(x,y,lines,color){
 }
 function hideTip(){ tip.style.display='none'; }
 
+/** =========================
+ *  Projects
+ *  ========================= */
 function getProj(){ return state.projects[state.currentProjectId]; }
 function listProjects(){ return Object.values(state.projects || {}); }
 function projLabel(p){ return `${p.instructor} / ${p.cohort}`; }
@@ -1259,6 +1229,888 @@ function setCurrent(id){
   renderAll();
 }
 
+/** =========================
+ *  CSV parser
+ *  ========================= */
+function parseCSV(text){
+  const rows=[];
+  let i=0, field='', row=[], inQuotes=false;
+  while(i<text.length){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){
+        if(text[i+1]==='"'){ field+='"'; i+=2; continue; }
+        inQuotes=false; i++; continue;
+      }
+      field+=c; i++; continue;
+    }else{
+      if(c==='"'){ inQuotes=true; i++; continue; }
+      if(c===',' || c==='\t'){ row.push(field); field=''; i++; continue; }
+      if(c==='\n'){
+        row.push(field); field='';
+        if(row.some(v=>String(v).trim()!=='')) rows.push(row);
+        row=[]; i++; continue;
+      }
+      if(c==='\r'){ i++; continue; }
+      field+=c; i++; continue;
+    }
+  }
+  row.push(field);
+  if(row.some(v=>String(v).trim()!=='')) rows.push(row);
+  return rows;
+}
+
+/** =========================
+ *  CRUD UI wrappers
+ *  ========================= */
+async function upsertOwned(date, media, addDb){
+  const p=getProj();
+  media=(media||'').trim();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+  if(!date) return alert('날짜를 선택해줘');
+  if(!media) return alert('매체를 입력해줘');
+
+  try{
+    await upsertOwnedOnDb(p.id, date, media, addDb);
+    renderAll();
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '온드DB 저장 실패');
+  }
+}
+async function deleteOwned(date, media){
+  const p=getProj();
+  media=(media||'').trim();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+  if(!date||!media) return alert('삭제할 날짜+매체를 입력해줘');
+
+  try{
+    await deleteOwnedOnDb(p.id, date, media);
+    renderAll();
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '온드DB 삭제 실패');
+  }
+}
+async function upsertAds(date, platform, spend, clicks, realDb){
+  const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+  if(!date) return alert('날짜를 선택해줘');
+
+  try{
+    await upsertAdsOnDb(p.id, date, platform, spend, clicks, realDb);
+    renderAll();
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '광고DB 저장 실패');
+  }
+}
+async function deleteAds(date, platform){
+  const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+  if(!date||!platform) return alert('삭제할 날짜+매체를 선택해줘');
+
+  try{
+    await deleteAdsOnDb(p.id, date, platform);
+    renderAll();
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '광고DB 삭제 실패');
+  }
+}
+
+/** =========================
+ *  Aggregation
+ *  ========================= */
+function groupOwnedDaily(p, mediaFilter='all'){
+  const m=new Map();
+  for(const e of p.ownedEntries){
+    if(!e.date) continue;
+    if(mediaFilter!=='all' && (e.media||'').trim()!==mediaFilter) continue;
+    m.set(e.date,(m.get(e.date)||0)+Number(e.addDb||0));
+  }
+  return m;
+}
+function groupAdsDaily(p, platformFilter='all'){
+  const m=new Map();
+  for(const e of p.adsEntries){
+    if(!e.date) continue;
+    if(platformFilter!=='all' && e.platform!==platformFilter) continue;
+    const cur=m.get(e.date)||{spend:0,clicks:0,realDb:0};
+    cur.spend+=Number(e.spend||0);
+    cur.clicks+=Number(e.clicks||0);
+    cur.realDb+=Number(e.realDb||0);
+    m.set(e.date,cur);
+  }
+  return m;
+}
+function allDatesFromData(p){
+  const set=new Set();
+  for(const e of p.ownedEntries) if(e.date) set.add(e.date);
+  for(const e of p.adsEntries) if(e.date) set.add(e.date);
+  return [...set].sort();
+}
+function buildDateAxis(p){
+  const rs=(p.cfg.rangeStart||'').trim();
+  const re=(p.cfg.rangeEnd||'').trim();
+  if(rs && re && rs<=re){
+    const out=[];
+    let cur=rs;
+    while(cur<=re){
+      out.push(cur);
+      cur=toISODate(new Date(cur+'T00:00:00'));
+      cur=addDays(cur,1);
+    }
+    return out;
+  }
+  return allDatesFromData(p);
+}
+function computeAdAverages(p, platformFilter='all'){
+  const daily=groupAdsDaily(p, platformFilter);
+  let spend=0, clicks=0, conv=0;
+  for(const v of daily.values()){
+    spend += Number(v.spend||0);
+    clicks += Number(v.clicks||0);
+    conv += Number(v.realDb||0);
+  }
+  const avgCpc = (clicks>0) ? (spend/clicks) : 0;
+  const avgCpa = (conv>0) ? (spend/conv) : 0;
+  const cvr    = (clicks>0) ? (conv/clicks) : 0;
+  return { spend, clicks, conv, avgCpc, avgCpa, cvr };
+}
+
+/** =========================
+ *  이전기수 / 가치 계산
+ *  ========================= */
+function getPrevValuePerDbForProject(p){
+  const mode = p.prevLink?.mode || 'none';
+
+  if(mode==='linked'){
+    const id = p.prevLink?.prevProjectId || '';
+    const prev = state.projects?.[id];
+    if(prev){
+      const { last } = buildMainRows(prev);
+      const prevRecruitFinal = last ? Number(last.recruitDb||0) : 0;
+      const prevRevenueFinal = Number(prev.actualRevenue || 0);
+      if(prevRecruitFinal>0 && prevRevenueFinal>0) return prevRevenueFinal / prevRecruitFinal;
+      return 0;
+    }
+    return 0;
+  }
+
+  if(mode==='manual'){
+    const db = Number(p.prevLink?.manual?.db || 0);
+    const rev = Number(p.prevLink?.manual?.revenue || 0);
+    if(db>0 && rev>0) return rev / db;
+    return 0;
+  }
+
+  return 0;
+}
+function getValuePerDbAuto(p, curRecruitDb){
+  const revenue = Number(p.actualRevenue || 0);
+  const recruitDb = Number(curRecruitDb || 0);
+  if(revenue>0 && recruitDb>0) return revenue / recruitDb;
+  return 0;
+}
+function buildMainRows(p){
+  const dates=buildDateAxis(p);
+  const ownedDaily=groupOwnedDaily(p,'all');
+  const adsDaily=groupAdsDaily(p,'all');
+
+  let ownedCum=0, paidCum=0, spendCum=0;
+  const dailyBudget=Number(p.cfg.dailyBudget||0);
+  const prevValuePerDb = getPrevValuePerDbForProject(p);
+
+  const rows=[];
+  for(let i=0;i<dates.length;i++){
+    const d=dates[i];
+    const ownedDay=ownedDaily.get(d)||0;
+    const ad=adsDaily.get(d)||{spend:0,clicks:0,realDb:0};
+
+    ownedCum+=ownedDay;
+    paidCum+=Number(ad.realDb||0);
+    spendCum+=Number(ad.spend||0);
+
+    const recruitDb = ownedCum + paidCum;
+    const denom=dailyBudget*(i+1);
+    const spendRate=denom>0?(spendCum/denom):null;
+    const expectedRev = prevValuePerDb * recruitDb;
+
+    rows.push({
+      date:d,
+      ownedCum, paidCum, recruitDb,
+      dailyBudget,
+      spendDay:Number(ad.spend||0),
+      spendCum,
+      spendRate,
+      expectedRev
+    });
+  }
+  return {rows, last: rows[rows.length-1] || null};
+}
+
+/** =========================
+ *  Imports
+ *  ========================= */
+async function importAdsCsvForPlatform(csvText, platform){
+  const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+
+  const rows=parseCSV(csvText);
+  if(rows.length<2){ alert('CSV가 비어있어'); return; }
+
+  const agg=new Map();
+  for(const r of rows){
+    const date=normalizeDateFromText(r[1]);
+    if(!date) continue;
+    const realDb=parseNumberLoose(r[2]);
+    const spend=parseNumberLoose(r[5]);
+    const clicks=parseNumberLoose(r[8]);
+    const cur=agg.get(date)||{spend:0,clicks:0,realDb:0};
+    cur.spend+=spend; cur.clicks+=clicks; cur.realDb+=realDb;
+    agg.set(date,cur);
+  }
+  if(agg.size===0){ alert('인식된 일자(B열)가 없어. B열 날짜 형식 확인'); return; }
+
+  try{
+    const payload = [];
+    for(const [date,v] of agg.entries()){
+      payload.push({ date, platform, spend:v.spend, clicks:v.clicks, realDb:v.realDb });
+    }
+    await bulkUpsertAdsOnDb(p.id, payload);
+    renderAll();
+    alert(`${platform==='meta'?'메타':'구글'} 업로드 완료: ${agg.size}일 반영`);
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '광고 CSV 업로드 실패');
+  }
+}
+async function importOwnedXlsx(file){
+  const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+
+  if(typeof XLSX === 'undefined'){
+    alert('XLSX 로드 실패(CDN 차단 가능). CSV로 업로드해줘.');
+    return;
+  }
+
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab, { type:'array', cellDates:true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+
+  const agg = new Map();
+  for(const row of data){
+    const media = String(row[3] ?? '').trim();
+    const date  = normalizeDateFromAny(row[7]);
+    if(!media || !date) continue;
+    const k = `${date}||${media}`;
+    agg.set(k, (agg.get(k)||0) + 1);
+  }
+  if(agg.size===0){ alert('인식된 데이터가 없어. D/H 위치 확인'); return; }
+
+  try{
+    const payload = [];
+    for(const [k,count] of agg.entries()){
+      const [date, media] = k.split('||');
+      payload.push({ date, media, addDb:count });
+    }
+    await bulkUpsertOwnedOnDb(p.id, payload);
+    renderAll();
+    alert(`온드 엑셀 업로드 완료: ${agg.size}개(일자×매체) 반영`);
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '온드 엑셀 업로드 실패');
+  }
+}
+async function importOwnedCsv(csvText){
+  const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+
+  const rows=parseCSV(csvText);
+  if(rows.length<2){ alert('CSV가 비어있어'); return; }
+
+  const agg=new Map();
+  for(const r of rows){
+    const media = String(r[3] ?? '').trim();
+    const date  = normalizeDateFromAny(r[7]);
+    if(!media || !date) continue;
+    const k=`${date}||${media}`;
+    agg.set(k,(agg.get(k)||0)+1);
+  }
+  if(agg.size===0){ alert('인식된 데이터가 없어. D/H 컬럼 확인'); return; }
+
+  try{
+    const payload = [];
+    for(const [k,count] of agg.entries()){
+      const [date, media]=k.split('||');
+      payload.push({ date, media, addDb:count });
+    }
+    await bulkUpsertOwnedOnDb(p.id, payload);
+    renderAll();
+    alert(`온드 CSV 업로드 완료: ${agg.size}개(일자×매체) 반영`);
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '온드 CSV 업로드 실패');
+  }
+}
+
+/** =========================
+ *  Canvas helpers
+ *  ========================= */
+function getDprCanvas(canvas){
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  const w=Math.max(10, Math.floor(rect.width));
+  const h=Math.max(10, Math.floor(rect.height));
+  canvas.width=Math.floor(w*dpr);
+  canvas.height=Math.floor(h*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function drawAxes(ctx,x0,y0,x1,y1){
+  ctx.strokeStyle='rgba(15,23,42,.18)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y1); ctx.lineTo(x1,y1); ctx.stroke();
+}
+function drawGrid(ctx,x0,y0,x1,y1,ticks=4){
+  ctx.strokeStyle='rgba(15,23,42,.06)'; ctx.lineWidth=1;
+  for(let i=1;i<=ticks;i++){
+    const y=y0+(y1-y0)*(i/(ticks+1));
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+  }
+}
+function drawLine(ctx,pts){
+  if(pts.length<2) return;
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.stroke();
+}
+function niceShortLabel(s, max=10){
+  const t=String(s||'');
+  if(t.length<=max) return t;
+  return t.slice(0,max-1)+'…';
+}
+
+let mainHover = { dbPoints: [], spendPoints: [] };
+
+/** =========================
+ *  Main charts
+ *  ========================= */
+function drawDbChart(canvas, rows){
+  const {ctx,w,h}=getDprCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+  const padL=44,padR=12,padT=14,padB=26;
+  const x0=padL,y0=padT,x1=w-padR,y1=h-padB;
+
+  drawGrid(ctx,x0,y0,x1,y1,4);
+  drawAxes(ctx,x0,y0,x1,y1);
+  mainHover.dbPoints = [];
+
+  if(!rows.length){
+    ctx.fillStyle='rgba(100,116,139,.9)';
+    ctx.font='12px system-ui';
+    ctx.fillText('데이터가 없습니다', x0+10, y0+20);
+    return;
+  }
+
+  const maxY=Math.max(...rows.map(r=>r.ownedCum), ...rows.map(r=>r.paidCum), ...rows.map(r=>r.recruitDb)) || 1;
+  const n=rows.length;
+  const xs=i=> x0 + (x1-x0)*(n===1?0:i/(n-1));
+  const ys=v=> y1 - (y1-y0)*(v/maxY);
+
+  const ptsOwned=rows.map((r,i)=>({x:xs(i),y:ys(r.ownedCum)}));
+  const ptsPaid =rows.map((r,i)=>({x:xs(i),y:ys(r.paidCum)}));
+  const ptsRec  =rows.map((r,i)=>({x:xs(i),y:ys(r.recruitDb)}));
+
+  ctx.lineWidth=2;
+  ctx.strokeStyle='rgba(15,23,42,.85)'; drawLine(ctx,ptsRec);
+  ctx.strokeStyle='rgba(37,99,235,.95)'; drawLine(ctx,ptsOwned);
+  ctx.strokeStyle='rgba(16,185,129,.95)'; drawLine(ctx,ptsPaid);
+
+  for(let i=0;i<n;i++){
+    mainHover.dbPoints.push({
+      x: xs(i),
+      date: rows[i].date,
+      owned: rows[i].ownedCum,
+      paid: rows[i].paidCum,
+      recruit: rows[i].recruitDb
+    });
+  }
+}
+function drawDailySpendChart(canvas, rows, dailyBudget){
+  const {ctx,w,h}=getDprCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+  const padL=60, padR=14, padT=14, padB=30;
+  const x0=padL, y0=padT, x1=w-padR, y1=h-padB;
+
+  drawGrid(ctx,x0,y0,x1,y1,4);
+  drawAxes(ctx,x0,y0,x1,y1);
+  mainHover.spendPoints = [];
+
+  if(!rows.length){
+    ctx.fillStyle='rgba(100,116,139,.9)';
+    ctx.font='12px system-ui';
+    ctx.fillText('데이터가 없습니다', x0+10, y0+20);
+    return;
+  }
+
+  const spends = rows.map(r => Number(r.spendDay||0));
+  const maxSpend = Math.max(...spends, 1);
+  const n=rows.length;
+  const xs=i=> x0 + (x1-x0)*(n===1?0:i/(n-1));
+  const ys=v=> y1 - (y1-y0)*(v/maxSpend);
+  const pts = spends.map((v,i)=>({x:xs(i), y:ys(v)}));
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, y1);
+  for(let i=0;i<pts.length-1;i++){
+    const p0 = pts[i-1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = pts[i+2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  }
+  ctx.lineTo(pts[pts.length-1].x, y1);
+  ctx.closePath();
+  ctx.fillStyle='rgba(37,99,235,.12)';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i=0;i<pts.length-1;i++){
+    const p0 = pts[i-1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = pts[i+2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  }
+  ctx.strokeStyle='rgba(37,99,235,.95)';
+  ctx.lineWidth=2.6;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle='rgba(37,99,235,.95)';
+  for(const p of pts){ ctx.beginPath(); ctx.arc(p.x,p.y,2.7,0,Math.PI*2); ctx.fill(); }
+  ctx.restore();
+
+  const bud = Number(dailyBudget||0);
+  if(bud > 0 && bud <= maxSpend){
+    const yB = ys(bud);
+    ctx.save();
+    ctx.strokeStyle='rgba(15,23,42,.40)';
+    ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(x0,yB); ctx.lineTo(x1,yB); ctx.stroke();
+    ctx.restore();
+  }
+
+  for(let i=0;i<n;i++){
+    mainHover.spendPoints.push({ x: xs(i), y: pts[i].y, date: rows[i].date, spend: spends[i] });
+  }
+}
+
+/** =========================
+ *  Compare colors
+ *  ========================= */
+function hashHue(str){
+  let h=0;
+  const s=String(str||'');
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+function projectColor(p, alpha=0.95){
+  const hue = hashHue(`${p.instructor}||${p.cohort}`);
+  return `hsla(${hue}, 78%, 45%, ${alpha})`;
+}
+function projectSoftColor(p, alpha=0.26){
+  const hue = hashHue(`${p.instructor}||${p.cohort}`);
+  return `hsla(${hue}, 78%, 45%, ${alpha})`;
+}
+
+/** =========================
+ *  Snapshot & Metrics
+ *  ========================= */
+function getFinalSnapshot(p){
+  const {last}=buildMainRows(p);
+  const adsAll=computeAdAverages(p,'all');
+
+  const paidFinal=last?Number(last.paidCum||0):0;
+  const ownedFinal=last?Number(last.ownedCum||0):0;
+  const recruitFinal=last?Number(last.recruitDb||0):0;
+  const expectedFinal=last?Number(last.expectedRev||0):0;
+
+  const spendFinal=adsAll.spend;
+  const actual = Number(p.actualRevenue||0);
+  const roas = (spendFinal>0) ? (actual/spendFinal) : 0;
+
+  const prevValuePerDb = getPrevValuePerDbForProject(p);
+  const valuePerDb = getValuePerDbAuto(p, recruitFinal);
+
+  return {
+    label: projLabel(p),
+    instructor: p.instructor,
+    cohort: p.cohort,
+    recruitDb: recruitFinal,
+    paidDb: paidFinal,
+    ownedDb: ownedFinal,
+    spend: spendFinal,
+    clicks: adsAll.clicks,
+    conv: adsAll.conv,
+    avgCpc: adsAll.avgCpc,
+    avgCpa: adsAll.avgCpa,
+    cvr: adsAll.cvr,
+    prevValuePerDb,
+    valuePerDb,
+    expectedRevenue: expectedFinal,
+    actualRevenue: actual,
+    roas
+  };
+}
+function metricDefs(){
+  return [
+    { key:'actualRevenue',   name:'총 매출(실매출)', type:'won',  get:s=>s.actualRevenue },
+    { key:'expectedRevenue', name:'예상 매출(이전 DB당가치×현모집DB)', type:'won', get:s=>s.expectedRevenue },
+    { key:'valuePerDb',      name:'DB당 가치(실매출/모집DB)', type:'won', get:s=>s.valuePerDb },
+    { key:'prevValuePerDb',  name:'이전기수 DB당 가치(이전실매출/이전모집DB)', type:'won', get:s=>s.prevValuePerDb },
+    { key:'spend',  name:'광고비(총예산)', type:'won',  get:s=>s.spend },
+    { key:'roas',   name:'ROAS(실매출/예산)', type:'x',  get:s=>s.roas },
+    { key:'recruitDb', name:'모집DB(Owned+Paid)', type:'int', get:s=>s.recruitDb },
+    { key:'paidDb', name:'Paid DB', type:'int', get:s=>s.paidDb },
+    { key:'ownedDb',name:'Owned DB', type:'int', get:s=>s.ownedDb },
+    { key:'avgCpc', name:'평균 CPC', type:'won', get:s=>s.avgCpc },
+    { key:'avgCpa', name:'평균 CPA', type:'won', get:s=>s.avgCpa },
+    { key:'cvr',    name:'CVR(전환/클릭)', type:'rate', get:s=>s.cvr },
+  ];
+}
+function formatMetric(val, type){
+  if(type==='won') return fmtWon(val);
+  if(type==='int') return fmtInt(val);
+  if(type==='rate') return fmtRate(val);
+  if(type==='x') return (Number.isFinite(val)? val.toFixed(1)+'배' : '0.0배');
+  return String(val??'');
+}
+
+/** =========================
+ *  Compare UI helpers
+ *  ========================= */
+function ensureCompareIds(){
+  const ps=listProjects();
+  if(ps.length===0) return;
+  if(!state.compare) state.compare = defaultCompare(ps[0].id);
+  if(!state.projects[state.compare.leftId]) state.compare.leftId = ps[0].id;
+  if(!state.projects[state.compare.rightId]) state.compare.rightId = ps[0].id;
+}
+function instructorList(){
+  const ps=listProjects();
+  const set=new Set(ps.map(p=>p.instructor).filter(Boolean));
+  return ['all', ...[...set].sort((a,b)=>a.localeCompare(b))];
+}
+function buildVsRows(leftSnap, rightSnap){
+  const defs = metricDefs();
+  return defs.map(def=>{
+    const lv = def.get(leftSnap);
+    const rv = def.get(rightSnap);
+    const delta = rv - lv;
+
+    const deltaText = (def.type==='won') ? fmtWon(Math.abs(delta))
+                     : (def.type==='int') ? fmtInt(Math.abs(delta))
+                     : (def.type==='rate') ? (Math.abs(delta*100).toFixed(2)+'%p')
+                     : (def.type==='x') ? (Math.abs(delta).toFixed(1)+'p')
+                     : String(Math.abs(delta));
+
+    const up = delta>0;
+    const down = delta<0;
+    const dir = up ? '▲' : (down ? '▼' : '■');
+
+    const midMain = (up||down) ? `${dir} ${deltaText}` : `변화 없음`;
+    const midCls = up ? 'up' : (down ? 'down' : '');
+
+    let sub='';
+    if((def.type==='won' || def.type==='int') && Number(lv)>0){
+      const rate = (delta/Number(lv))*100;
+      sub = `(${rate.toFixed(2)}%)`;
+    }else if(def.type==='rate'){ sub = `(p 차이)`; }
+    else if(def.type==='x'){ sub = `(배수 차이)`; }
+
+    return {
+      metric:def.name,
+      leftText: formatMetric(lv, def.type),
+      rightText: formatMetric(rv, def.type),
+      midMain, midSub: sub, midCls
+    };
+  });
+}
+function setOptionsPreserve(selectEl, options, wantedValue){
+  const current = wantedValue ?? selectEl.value;
+  const html = options.map(o=>`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('');
+  const hash = btoa(unescape(encodeURIComponent(html)));
+  if(selectEl.dataset.optHash !== hash){
+    selectEl.innerHTML = html;
+    selectEl.dataset.optHash = hash;
+  }
+  const values = new Set(options.map(o=>String(o.value)));
+  if(values.has(String(current))) selectEl.value = String(current);
+  else if(options[0]) selectEl.value = String(options[0].value);
+}
+
+/** =========================
+ *  Compare chart
+ *  ========================= */
+let compareHover = { items:[] };
+
+function drawCompareBarChart(canvas, items){
+  const {ctx,w,h}=getDprCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+
+  const padL=56, padR=18, padT=18, padB=52;
+  const x0=padL, y0=padT, x1=w-padR, y1=h-padB;
+
+  drawGrid(ctx,x0,y0,x1,y1,4);
+  drawAxes(ctx,x0,y0,x1,y1);
+
+  compareHover.items = [];
+
+  if(!items.length){
+    ctx.fillStyle='rgba(100,116,139,.9)';
+    ctx.font='12px system-ui';
+    ctx.fillText('표시할 데이터가 없습니다', x0+10, y0+20);
+    return;
+  }
+
+  const maxV = Math.max(...items.map(x=>x.value), 1);
+  const n = items.length;
+  const slotW = (x1-x0) / n;
+  const barW = Math.max(18, Math.min(54, slotW - 10));
+  const yVal = v => y1 - (y1-y0) * (v / maxV);
+
+  const placed=[];
+  function box(x,y,w,h){ return {x1:x,y1:y,x2:x+w,y2:y+h}; }
+  function overlaps(a,b){ return !(a.x2<b.x1||a.x1>b.x2||a.y2<b.y1||a.y1>b.y2); }
+
+  for(let i=0;i<n;i++){
+    const it = items[i];
+    const cx = x0 + slotW*i + slotW/2;
+    const bx = cx - barW/2;
+    const by = yVal(it.value);
+    const bh = Math.max(0, y1 - by);
+
+    const r=10;
+    ctx.save();
+    ctx.fillStyle = it.colorFill;
+    ctx.strokeStyle = it.colorStroke;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(bx, y1);
+    ctx.lineTo(bx, by+r);
+    ctx.quadraticCurveTo(bx, by, bx+r, by);
+    ctx.lineTo(bx+barW-r, by);
+    ctx.quadraticCurveTo(bx+barW, by, bx+barW, by+r);
+    ctx.lineTo(bx+barW, y1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    const text = it.valueText;
+    ctx.save();
+    ctx.font='12px system-ui';
+    const tw = ctx.measureText(text).width;
+    const padX=8, boxH=24, boxW=tw+padX*2;
+    let lx = cx - boxW/2;
+    let ly = by - 10 - boxH;
+    let b = box(lx,ly,boxW,boxH);
+    let guard=0;
+    while(placed.some(p=>overlaps(p,b)) && guard<12){
+      ly -= (boxH + 6);
+      b = box(lx,ly,boxW,boxH);
+      guard++;
+    }
+    if(ly<y0) ly=y0;
+    placed.push(box(lx,ly,boxW,boxH));
+
+    ctx.fillStyle='rgba(255,255,255,.95)';
+    ctx.strokeStyle='rgba(226,232,240,.95)';
+    ctx.lineWidth=1;
+
+    const rr=10;
+    ctx.beginPath();
+    ctx.moveTo(lx+rr, ly);
+    ctx.lineTo(lx+boxW-rr, ly);
+    ctx.quadraticCurveTo(lx+boxW, ly, lx+boxW, ly+rr);
+    ctx.lineTo(lx+boxW, ly+boxH-rr);
+    ctx.quadraticCurveTo(lx+boxW, ly+boxH, lx+boxW-rr, ly+boxH);
+    ctx.lineTo(lx+rr, ly+boxH);
+    ctx.quadraticCurveTo(lx, ly+boxH, lx, ly+boxH-rr);
+    ctx.lineTo(lx, ly+rr);
+    ctx.quadraticCurveTo(lx, ly, lx+rr, ly);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = it.colorStroke;
+    ctx.textBaseline='middle';
+    ctx.fillText(text, lx+padX, ly+boxH/2);
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle='rgba(71,85,105,.95)';
+    ctx.font='11px system-ui';
+    const xl = niceShortLabel(it.label, 14);
+    const tww = ctx.measureText(xl).width;
+    ctx.fillText(xl, cx - tww/2, y1 + 28);
+    ctx.restore();
+
+    compareHover.items.push({
+      x: bx, y: by, w: barW, h: bh,
+      tooltipLines: it.tooltipLines,
+      color: it.colorStroke
+    });
+  }
+}
+
+function renderCompareVs(){
+  if(!hasProject()) return;
+  ensureCompareIds();
+
+  const ps=listProjects().sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
+  setOptionsPreserve(cmpLeftProj,  ps.map(p=>({value:p.id, label:projLabel(p)})), state.compare.leftId);
+  setOptionsPreserve(cmpRightProj, ps.map(p=>({value:p.id, label:projLabel(p)})), state.compare.rightId);
+
+  state.compare.leftId = cmpLeftProj.value;
+  state.compare.rightId= cmpRightProj.value;
+
+  const leftP = state.projects[state.compare.leftId];
+  const rightP= state.projects[state.compare.rightId];
+  if(!leftP || !rightP) return;
+
+  const leftSnap = getFinalSnapshot(leftP);
+  const rightSnap= getFinalSnapshot(rightP);
+
+  cmpLeftTitle.textContent = leftSnap.label;
+  cmpRightTitle.textContent = rightSnap.label;
+
+  const rows = buildVsRows(leftSnap, rightSnap);
+  cmpVsTbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td class="vsLeftCell"><span class="valPill blue">${esc(r.leftText)}</span></td>
+      <td class="vsMidCell">
+        <div class="metricLabel">${esc(r.metric)}</div>
+        <div style="margin-top:8px">
+          <span class="deltaBox">
+            <span class="deltaTop">차이(우측-좌측)</span>
+            <span class="deltaVal ${r.midCls}">${esc(r.midMain)}</span>
+            <span class="deltaSub">${esc(r.midSub||'')}</span>
+          </span>
+        </div>
+      </td>
+      <td class="vsRightCell" style="text-align:right"><span class="valPill red">${esc(r.rightText)}</span></td>
+    </tr>
+  `).join('');
+  saveState();
+}
+function renderCompareGraphControls(){
+  if(!hasProject()) return;
+  ensureCompareIds();
+
+  cmpMode.value = state.compare.mode || cmpMode.value || 'project';
+  cmpSort.value = state.compare.sort || cmpSort.value || 'desc';
+
+  const insts = instructorList();
+  setOptionsPreserve(cmpInstructorFilter, insts.map(x=>({value:x, label:(x==='all'?'전체':x)})), state.compare.instructorFilter || 'all');
+
+  const defs = metricDefs();
+  setOptionsPreserve(cmpMetric, defs.map(d=>({value:d.key, label:d.name})), state.compare.metric || 'actualRevenue');
+
+  state.compare.mode = cmpMode.value;
+  state.compare.sort = cmpSort.value;
+  state.compare.instructorFilter = cmpInstructorFilter.value;
+  state.compare.metric = cmpMetric.value;
+}
+function buildCompareGraphData(){
+  const ps=listProjects();
+  const defs = metricDefs();
+  const def = defs.find(d=>d.key===cmpMetric.value) || defs[0];
+  const mode = cmpMode.value;
+  const instFilter = cmpInstructorFilter.value || 'all';
+  const sort = cmpSort.value || 'desc';
+
+  const snaps = ps.map(p=>({p, s:getFinalSnapshot(p)}))
+    .filter(x=> instFilter==='all' ? true : x.s.instructor===instFilter);
+
+  let items=[];
+  if(mode==='project'){
+    items = snaps.map(({p,s})=>{
+      const v = Number(def.get(s) || 0);
+      return {
+        label: `${s.instructor}/${s.cohort}`,
+        value: v,
+        valueText: formatMetric(v, def.type),
+        colorStroke: projectColor(p, 0.95),
+        colorFill: projectSoftColor(p, 0.28),
+        tooltipLines: [`${s.instructor} / ${s.cohort}`, `${def.name}: ${formatMetric(v, def.type)}`]
+      };
+    });
+  }else{
+    const byInst = new Map();
+    for(const {s} of snaps){
+      const cur = byInst.get(s.instructor) || { instructor:s.instructor, acc:0 };
+      cur.acc += Number(def.get(s) || 0);
+      byInst.set(s.instructor, cur);
+    }
+    items = [...byInst.values()].map(x=>{
+      const v=x.acc;
+      const hue=hashHue(x.instructor);
+      return {
+        label: x.instructor,
+        value: v,
+        valueText: formatMetric(v, def.type),
+        colorStroke: `hsla(${hue}, 78%, 42%, .95)`,
+        colorFill: `hsla(${hue}, 78%, 42%, .22)`,
+        tooltipLines: [`${x.instructor} (합산)`, `${def.name}: ${formatMetric(v, def.type)}`]
+      };
+    });
+  }
+
+  if(sort==='name') items.sort((a,b)=>a.label.localeCompare(b.label));
+  else if(sort==='asc') items.sort((a,b)=>a.value-b.value);
+  else items.sort((a,b)=>b.value-a.value);
+
+  const title = `${mode==='project'?'기수(프로젝트)별':'강사별'} · ${def.name}`;
+  const subtitle = `필터: ${instFilter==='all'?'전체 강사':instFilter} / 정렬: ${sort==='desc'?'내림차순':(sort==='asc'?'오름차순':'이름순')}`;
+  return {items,title,subtitle};
+}
+function renderCompareGraph(){
+  if(!hasProject()){
+    cmpGraphTitle.textContent = '-';
+    cmpGraphSub.textContent = '로그인 후 데이터를 불러와줘';
+    requestAnimationFrame(()=> drawCompareBarChart(chartCompare, []));
+    return;
+  }
+
+  renderCompareGraphControls();
+  const {items,title,subtitle}=buildCompareGraphData();
+  cmpGraphTitle.textContent = title;
+  cmpGraphSub.textContent = subtitle;
+  requestAnimationFrame(()=> drawCompareBarChart(chartCompare, items));
+
+  state.compare.mode = cmpMode.value;
+  state.compare.instructorFilter = cmpInstructorFilter.value;
+  state.compare.metric = cmpMetric.value;
+  state.compare.sort = cmpSort.value;
+  saveState();
+}
 function renderCompare(){
   if(!hasProject()){
     cmpVsTbody.innerHTML = '';
@@ -1271,6 +2123,88 @@ function renderCompare(){
   renderCompareGraph();
 }
 
+/** =========================
+ *  Empty / Auth UI
+ *  ========================= */
+function updateAuthUi(){
+  if(isLoggedIn()){
+    authStatus.textContent = loginIdLabelFromSession() || '로그인됨';
+    btnLogout.style.display = '';
+    loginOverlay.style.display = 'none';
+  }else{
+    authStatus.textContent = '미로그인';
+    btnLogout.style.display = 'none';
+    loginOverlay.style.display = 'flex';
+  }
+}
+function resetUiForNoProject(){
+  curProjLabel.textContent = isLoggedIn() ? '프로젝트 없음' : '로그인 필요';
+  curInstructor.textContent = '-';
+  curCohort.textContent = '-';
+  statDates.textContent = '0';
+
+  projSelect.innerHTML = '';
+  cmpLeftProj.innerHTML = '';
+  cmpRightProj.innerHTML = '';
+  prevProjSelect.innerHTML = '<option value="">(선택)</option>';
+  ownedFilter.innerHTML = '<option value="all">전체</option>';
+  adsFilter.value = 'all';
+
+  kpiTotalDb.textContent = '0';
+  kpiPaidDb.textContent = '0';
+  kpiOwnedDb.textContent = '0';
+  kpiExpectedRev.textContent = '₩0';
+
+  kpiAvgCpc.textContent = '₩0';
+  kpiAvgCpa.textContent = '₩0';
+  kpiCvr.textContent = '0.00%';
+  kpiAdSpend.textContent = '₩0';
+
+  cfgDailyBudget.value = '';
+  cfgValuePerDb.value = '';
+  actualRevenue.value = '';
+  rangeStart.value = '';
+  rangeEnd.value = '';
+  prevDb.value = '';
+  prevSpend.value = '';
+  prevRevenue.value = '';
+  prevLinkInfo.textContent = '현재: 이전기수 미연결';
+  revenueCompareBox.textContent = isLoggedIn()
+    ? '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨'
+    : '로그인 후 프로젝트를 불러오면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
+
+  mainTbody.innerHTML = `
+    <tr>
+      <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트가 없습니다. 새 프로젝트를 만들어줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td>
+    </tr>
+  `;
+  ownedTbody.innerHTML = `
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">
+      ${isLoggedIn() ? '데이터가 없습니다.' : '로그인 후 데이터를 불러와줘.'}
+    </td></tr>
+  `;
+  adsTbody.innerHTML = `
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">
+      ${isLoggedIn() ? '데이터가 없습니다.' : '로그인 후 데이터를 불러와줘.'}
+    </td></tr>
+  `;
+  cmpVsTbody.innerHTML = '';
+
+  cmpGraphTitle.textContent = '-';
+  cmpGraphSub.textContent = isLoggedIn() ? '프로젝트를 불러오면 비교 그래프가 여기 표시됨' : '로그인 후 데이터를 불러와줘';
+
+  requestAnimationFrame(()=>{
+    drawDbChart(chartDb, []);
+    drawDailySpendChart(chartDailySpend, [], 0);
+    drawCompareBarChart(chartCompare, []);
+  });
+}
+
+/** =========================
+ *  Render
+ *  ========================= */
 function refreshProjectSelect(){
   const ps=listProjects().sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
   projSelect.innerHTML = ps.map(p=>`<option value="${esc(p.id)}">${esc(projLabel(p))}</option>`).join('');
@@ -1280,7 +2214,7 @@ function refreshProjectSelect(){
 function refreshHeaderBadges(){
   const p=getProj();
   if(!p){
-    curProjLabel.textContent = '프로젝트 없음';
+    curProjLabel.textContent = isLoggedIn() ? '프로젝트 없음' : '로그인 필요';
     curInstructor.textContent = '-';
     curCohort.textContent = '-';
     return;
@@ -1289,7 +2223,149 @@ function refreshHeaderBadges(){
   curInstructor.textContent = p.instructor;
   curCohort.textContent = p.cohort;
 }
+function uniqueOwnedMedias(p){
+  const set=new Set(p.ownedEntries.map(e=>(e.media||'').trim()).filter(Boolean));
+  return [...set].sort((a,b)=>a.localeCompare(b));
+}
+function renderOwned(){
+  const p=getProj();
+  if(!p){
+    ownedTbody.innerHTML = `
+      <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트를 먼저 선택해줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td></tr>
+    `;
+    return;
+  }
 
+  const cur=ownedFilter.value || 'all';
+  const opts=['all', ...uniqueOwnedMedias(p)];
+  ownedFilter.innerHTML = opts.map(v=>`<option value="${esc(v)}">${esc(v==='all'?'전체':v)}</option>`).join('');
+  if(opts.includes(cur)) ownedFilter.value=cur;
+
+  const f=ownedFilter.value || 'all';
+  const rows=[...p.ownedEntries]
+    .filter(e=>e.date && (e.media||'').trim()!=='')
+    .filter(e=> f==='all' ? true : (e.media||'').trim()===f)
+    .sort((a,b)=> (a.date===b.date ? (a.media||'').localeCompare(b.media||'') : a.date.localeCompare(b.date)));
+
+  ownedTbody.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td class="sticky">${r.date}</td>
+      <td>${esc((r.media||'').trim())}</td>
+      <td class="num">${fmtInt(r.addDb)}</td>
+    </tr>
+  `).join('') : `
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>
+  `;
+}
+function renderAds(){
+  const p=getProj();
+  if(!p){
+    kpiAvgCpc.textContent = '₩0';
+    kpiAvgCpa.textContent = '₩0';
+    kpiCvr.textContent = '0.00%';
+    kpiAdSpend.textContent = '₩0';
+    adsTbody.innerHTML = `
+      <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트를 먼저 선택해줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td></tr>
+    `;
+    return;
+  }
+
+  const f=adsFilter.value || 'all';
+  const rows=[...p.adsEntries]
+    .filter(e=>e.date && e.platform)
+    .filter(e=> f==='all' ? true : e.platform===f)
+    .sort((a,b)=> (a.date===b.date ? a.platform.localeCompare(b.platform) : a.date.localeCompare(b.date)));
+
+  const m=computeAdAverages(p, f);
+  kpiAvgCpc.textContent = fmtWon(m.avgCpc);
+  kpiAvgCpa.textContent = fmtWon(m.avgCpa);
+  kpiCvr.textContent    = fmtRate(m.cvr);
+  kpiAdSpend.textContent= fmtWon(m.spend);
+
+  adsTbody.innerHTML = rows.length ? rows.map(r=>{
+    const cpc = (r.clicks>0) ? (r.spend/r.clicks) : null;
+    const cpa = (r.realDb>0) ? (r.spend/r.realDb) : null;
+    const cvr = (r.clicks>0) ? (r.realDb/r.clicks) : null;
+    return `
+      <tr>
+        <td class="sticky">${r.date}</td>
+        <td>${r.platform==='meta'?'메타':'구글'}</td>
+        <td class="num">${fmtWon(r.spend)}</td>
+        <td class="num">${fmtInt(r.clicks)}</td>
+        <td class="num">${fmtInt(r.realDb)}</td>
+        <td class="num">${cpc===null?'':fmtWon(cpc)}</td>
+        <td class="num">${cpa===null?'':fmtWon(cpa)}</td>
+        <td class="center mono">${cvr===null?'':fmtRate(cvr)}</td>
+      </tr>
+    `;
+  }).join('') : `
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>
+  `;
+}
+function renderMain(){
+  const p=getProj();
+  if(!p){
+    statDates.textContent='0';
+    kpiTotalDb.textContent='0';
+    kpiPaidDb.textContent='0';
+    kpiOwnedDb.textContent='0';
+    kpiExpectedRev.textContent='₩0';
+    mainTbody.innerHTML = `
+      <tr>
+        <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">
+          ${isLoggedIn() ? '프로젝트를 먼저 만들어줘.' : '로그인 후 데이터를 불러와줘.'}
+        </td>
+      </tr>
+    `;
+    requestAnimationFrame(()=>{
+      drawDbChart(chartDb, []);
+      drawDailySpendChart(chartDailySpend, [], 0);
+    });
+    return;
+  }
+
+  const {rows,last}=buildMainRows(p);
+  statDates.textContent=rows.length;
+
+  if(!last){
+    kpiTotalDb.textContent='0';
+    kpiPaidDb.textContent='0';
+    kpiOwnedDb.textContent='0';
+    kpiExpectedRev.textContent='₩0';
+  }else{
+    kpiTotalDb.textContent=fmtInt(last.recruitDb);
+    kpiPaidDb.textContent=fmtInt(last.paidCum);
+    kpiOwnedDb.textContent=fmtInt(last.ownedCum);
+    kpiExpectedRev.textContent=fmtWon(last.expectedRev);
+  }
+
+  mainTbody.innerHTML = rows.length ? rows.map((r)=>`
+    <tr>
+      <td class="sticky">${r.date}</td>
+      <td class="num">${fmtInt(r.ownedCum)}</td>
+      <td class="num">${fmtInt(r.paidCum)}</td>
+      <td class="num">${fmtInt(r.recruitDb)}</td>
+      <td class="num">${fmtWon(r.dailyBudget)}</td>
+      <td class="num">${fmtWon(r.spendDay)}</td>
+      <td class="num">${fmtWon(r.spendCum)}</td>
+      <td class="center mono">${r.spendRate===null?'':fmtRate(r.spendRate)}</td>
+      <td class="num">${fmtWon(r.expectedRev)}</td>
+    </tr>
+  `).join('') : `
+    <tr>
+      <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td>
+    </tr>
+  `;
+
+  requestAnimationFrame(()=>{
+    drawDbChart(chartDb, rows);
+    drawDailySpendChart(chartDailySpend, rows, Number(p.cfg.dailyBudget||0));
+  });
+}
 function refreshSettingsUI(){
   const p=getProj();
   if(!p){
@@ -1301,7 +2377,9 @@ function refreshSettingsUI(){
     prevRevenue.value = '';
     prevProjSelect.innerHTML = '<option value="">(선택)</option>';
     prevLinkInfo.textContent = '현재: 이전기수 미연결';
-    revenueCompareBox.textContent = '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
+    revenueCompareBox.textContent = isLoggedIn()
+      ? '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨'
+      : '로그인 후 프로젝트를 불러오면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
     return;
   }
 
@@ -1315,10 +2393,7 @@ function refreshSettingsUI(){
   const valuePerDbAuto = getValuePerDbAuto(p, recruitFinal);
   cfgValuePerDb.value = Math.round(valuePerDbAuto || 0);
 
-  const ps = listProjects()
-    .filter(x=>x.id!==p.id)
-    .sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
-
+  const ps=listProjects().filter(x=>x.id!==p.id).sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
   prevProjSelect.innerHTML = [`<option value="">(선택)</option>`].concat(
     ps.map(x=>`<option value="${esc(x.id)}">${esc(projLabel(x))}</option>`)
   ).join('');
@@ -1351,22 +2426,30 @@ function refreshSettingsUI(){
     `<b>현재 DB당 가치</b> ${fmtWon(valuePerDbAuto)} (실매출/모집DB)<br/>` +
     `<b>이전기수 DB당 가치</b> ${fmtWon(prevValuePerDbFinal)} → <b>예상매출</b> ${fmtWon(expected)} (이전 DB당가치×현 모집DB)`;
 }
-
 function renderAll(){
-  authStatus.textContent = loginLabel();
+  updateAuthUi();
+
+  if(!hasProject()){
+    resetUiForNoProject();
+    return;
+  }
+
   refreshProjectSelect();
   refreshHeaderBadges();
   renderMain();
   renderOwned();
   renderAds();
 
-  const cmpVisible  = $('view-compare').style.display !== 'none';
+  const cmpVisible = $('view-compare').style.display !== 'none';
   if(cmpVisible) renderCompare();
   else renderCompareGraph();
 
   refreshSettingsUI();
 }
 
+/** =========================
+ *  Project management
+ *  ========================= */
 async function createProject(){
   const instructor = prompt('강사명 입력', '숙사장')?.trim();
   if(!instructor) return;
@@ -1431,6 +2514,9 @@ async function deleteProject(){
   }
 }
 
+/** =========================
+ *  Tabs
+ *  ========================= */
 document.querySelectorAll('.tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -1445,6 +2531,9 @@ document.querySelectorAll('.tab').forEach(btn=>{
   });
 });
 
+/** =========================
+ *  General events
+ *  ========================= */
 projSelect.addEventListener('change', ()=> setCurrent(projSelect.value));
 btnNewProj.addEventListener('click', createProject);
 btnDupProj.addEventListener('click', duplicateProject);
@@ -1453,6 +2542,7 @@ btnDelProj.addEventListener('click', deleteProject);
 btnRecalc.addEventListener('click', ()=> renderAll());
 
 btnReset.addEventListener('click', async ()=>{
+  if(!isLoggedIn()) return alert('로그인 후 사용할 수 있어');
   if(!confirm('정말 전체 초기화할까? (모든 프로젝트/데이터 삭제)')) return;
   try{
     await clearAllDataOnDb();
@@ -1481,14 +2571,17 @@ btnSaveRange.addEventListener('click', async ()=>{
   }
 });
 
-btnAddOwned.addEventListener('click', ()=> upsertOwned(ownedDate.value, ownedMedia.value, ownedAddDb.value));
-btnDelOwned.addEventListener('click', ()=> deleteOwned(ownedDate.value, ownedMedia.value));
+// owned
+btnAddOwned.addEventListener('click', async ()=> upsertOwned(ownedDate.value, ownedMedia.value, ownedAddDb.value));
+btnDelOwned.addEventListener('click', async ()=> deleteOwned(ownedDate.value, ownedMedia.value));
 ownedFilter.addEventListener('change', ()=> renderOwned());
 
-btnAddAds.addEventListener('click', ()=> upsertAds(adsDate.value, adsPlatform.value, adsSpend.value, adsClicks.value, adsRealDb.value));
-btnDelAds.addEventListener('click', ()=> deleteAds(adsDate.value, adsPlatform.value));
+// ads
+btnAddAds.addEventListener('click', async ()=> upsertAds(adsDate.value, adsPlatform.value, adsSpend.value, adsClicks.value, adsRealDb.value));
+btnDelAds.addEventListener('click', async ()=> deleteAds(adsDate.value, adsPlatform.value));
 adsFilter.addEventListener('change', ()=> renderAds());
 
+// settings
 btnSaveCfg.addEventListener('click', async ()=>{
   const p=getProj();
   if(!p) return alert('프로젝트를 먼저 선택해줘');
@@ -1555,7 +2648,11 @@ btnSavePrevManual.addEventListener('click', async ()=>{
   p.prevLink = {
     mode:'manual',
     prevProjectId:'',
-    manual:{ db:Number(prevDb.value||0), spend:Number(prevSpend.value||0), revenue:Number(prevRevenue.value||0) }
+    manual:{
+      db:Number(prevDb.value||0),
+      spend:Number(prevSpend.value||0),
+      revenue:Number(prevRevenue.value||0)
+    }
   };
 
   try{
@@ -1568,6 +2665,9 @@ btnSavePrevManual.addEventListener('click', async ()=>{
   }
 });
 
+/** =========================
+ *  Upload routing
+ *  ========================= */
 let pendingUpload=null;
 btnOwnedXlsx.addEventListener('click', ()=>{ pendingUpload='owned_xlsx'; fileInput.value=''; fileInput.click(); });
 btnOwnedCsv.addEventListener('click', ()=>{ pendingUpload='owned_csv'; fileInput.value=''; fileInput.click(); });
@@ -1610,6 +2710,9 @@ fileInput.addEventListener('change', async ()=>{
   }
 });
 
+/** =========================
+ *  Compare events
+ *  ========================= */
 cmpLeftProj.addEventListener('change', ()=>{
   state.compare.leftId = cmpLeftProj.value;
   saveState();
@@ -1629,6 +2732,9 @@ btnApplyCompare.addEventListener('click', ()=>{
   renderCompareGraph();
 });
 
+/** =========================
+ *  Compare tooltip
+ *  ========================= */
 chartCompare.addEventListener('mousemove', (ev)=>{
   const rect=chartCompare.getBoundingClientRect();
   const mx=ev.clientX-rect.left;
@@ -1646,6 +2752,9 @@ chartCompare.addEventListener('mousemove', (ev)=>{
 });
 chartCompare.addEventListener('mouseleave', hideTip);
 
+/** =========================
+ *  Main chart tooltip
+ *  ========================= */
 function nearestPoint(points, mx, my, radius=10){
   let best=null, bestD=Infinity;
   const r2=radius*radius;
@@ -1695,47 +2804,47 @@ window.addEventListener('resize', ()=>{
   if(cmpVisible) renderCompare();
 });
 
+/** =========================
+ *  Login events
+ *  ========================= */
 btnLogin.addEventListener('click', async ()=>{
   loginMsg.textContent = '';
-  btnLogin.disabled = true;
-  btnLogin.textContent = '로그인 중...';
-
   try{
     await loginWithIdPassword(loginId.value, loginPw.value);
     loginPw.value = '';
+    updateAuthUi();
     await loadStateFromDb();
     if(Object.keys(state.projects).length > 0){
       ensureCompareIds();
     }
-    showAppScreen();
     renderAll();
   }catch(err){
     console.error(err);
     loginMsg.textContent = err?.message || '로그인 실패';
-  }finally{
-    btnLogin.disabled = false;
-    btnLogin.textContent = '로그인';
   }
 });
+
 loginPw.addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') btnLogin.click();
 });
 
 btnLogout.addEventListener('click', async ()=>{
   try{
-    await signOutUser();
+    await logout();
     state.projects = {};
     state.currentProjectId = '';
     state.compare = defaultCompare('');
     saveState();
-    loginMsg.textContent = '';
-    showLoginScreen();
+    renderAll();
   }catch(err){
     console.error(err);
     alert(err?.message || '로그아웃 실패');
   }
 });
 
+/** =========================
+ *  init
+ *  ========================= */
 (async function init(){
   try{
     const today=toISODate(new Date());
@@ -1743,21 +2852,18 @@ btnLogout.addEventListener('click', async ()=>{
     adsDate.value=today;
 
     await ensureAuth();
+    updateAuthUi();
 
     if(isLoggedIn()){
       await loadStateFromDb();
       if(Object.keys(state.projects).length > 0){
         ensureCompareIds();
       }
-      showAppScreen();
-      renderAll();
-    }else{
-      showLoginScreen();
     }
+    renderAll();
   }catch(err){
     console.error(err);
-    showLoginScreen();
-    loginMsg.textContent = '초기 로딩 실패: Supabase 설정이나 RLS를 확인해줘';
+    alert('초기 로딩 실패: Supabase URL / anon key / Email 로그인 / RLS 설정을 확인해줘');
   }
 })();
 </script>
