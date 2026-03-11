@@ -849,7 +849,7 @@ async function createProjectOnDb(instructor, cohort, silent=false){
     owner_id: ownerId(),
     instructor,
     cohort,
-    daily_budget: 60000000,
+    daily_budget: null,
     range_start: null,
     range_end: null,
     actual_revenue: 0,
@@ -2449,10 +2449,10 @@ function renderAll(){
  *  Project management
  *  ========================= */
 async function createProject(){
-  const instructor = prompt('강사명 입력', '숙사장')?.trim();
+  const instructor = prompt('강사명 입력', '강사명')?.trim();
   if(!instructor) return;
 
-  const cohort = prompt('기수/라벨 입력', '1기')?.trim();
+  const cohort = prompt('기수/라벨 입력', 'n기')?.trim();
   if(!cohort) return;
 
   try{
