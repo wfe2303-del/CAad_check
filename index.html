@@ -47,7 +47,7 @@
     .card .hd .hint{font-size:12px;color:var(--muted);margin-top:2px}
     .card .bd{padding:12px 14px 14px 14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input[type="date"], input[type="number"], input[type="text"], select{
+    input[type="date"], input[type="number"], input[type="text"], input[type="password"], select{
       border:1px solid var(--bd);border-radius:10px;padding:9px 10px;font-size:13px;background:#fff;min-height:36px;
     }
     input[type="number"]{font-family:var(--mono)}
@@ -121,6 +121,11 @@
       box-shadow:0 10px 25px rgba(0,0,0,.18);display:none;white-space:nowrap;
     }
     .tip b{font-family:var(--mono)}
+    .empty-state{
+      border:1px dashed #cbd5e1;border-radius:16px;background:#fff;padding:28px 18px;text-align:center;color:#475569;
+    }
+    .empty-state h3{margin:0 0 8px 0;font-size:16px}
+    .empty-state p{margin:0;font-size:13px;color:#64748b}
   </style>
 </head>
 
@@ -135,6 +140,8 @@
       <div class="actions">
         <span class="pill">현재 프로젝트: <b id="curProjLabel">없음</b></span>
         <span class="pill"><b id="statDates">0</b>일</span>
+        <span class="pill">로그인: <b id="authStatus">미로그인</b></span>
+        <button id="btnLogout" style="display:none">로그아웃</button>
         <button id="btnReset" class="btn-danger">전체 초기화</button>
         <button id="btnRecalc" class="btn-primary">재계산</button>
       </div>
@@ -556,6 +563,29 @@
   </section>
 </main>
 
+<div id="loginOverlay" style="
+  position:fixed; inset:0; background:rgba(15,23,42,.45);
+  display:none; align-items:center; justify-content:center; z-index:9998;
+">
+  <div style="
+    width:min(420px, calc(100vw - 32px));
+    background:#fff; border:1px solid #e5e7eb; border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,.18); padding:22px;
+  ">
+    <div style="font-size:18px;font-weight:900;margin-bottom:6px">로그인</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:16px">
+      저장된 데이터를 보려면 로그인해야 합니다.
+    </div>
+
+    <div style="display:grid;gap:10px">
+      <input id="loginId" type="text" placeholder="아이디" value="classaround"/>
+      <input id="loginPw" type="password" placeholder="비밀번호"/>
+      <button id="btnLogin" class="btn-primary">로그인</button>
+      <div id="loginMsg" style="font-size:12px;color:#dc2626;min-height:18px"></div>
+    </div>
+  </div>
+</div>
+
 <input id="fileInput" type="file" accept=".csv,.tsv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none"/>
 <div id="tooltip" class="tip"></div>
 
@@ -565,11 +595,15 @@
  *  ========================= */
 const UI_LS_KEY = 'INDEPENDENT_REPORT_V441_UI_ONLY';
 
-const SUPABASE_URL = 'https://eaukbojyuygwhkaxdvnx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhdWtib2p5dXlnd2hrYXhkdm54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxOTk0OTMsImV4cCI6MjA4ODc3NTQ5M30.0IAiljx47666xWxJq5N_kDmjPUpESmibPqEjDtb2TRc';
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_PUBLIC_KEY';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authSession = null;
+
+const LOGIN_ID_MAP = {
+  classaround: 'classaround@gmail.com'
+};
 
 /** =========================
  *  공통 유틸
@@ -632,17 +666,6 @@ function deepClone(v){ return JSON.parse(JSON.stringify(v)); }
 /** =========================
  *  상태 / UI 저장
  *  ========================= */
-function defaultProject(instructor='숙사장', cohort='1기'){
-  return {
-    id: nowId(),
-    instructor, cohort,
-    ownedEntries: [],
-    adsEntries: [],
-    cfg: { dailyBudget: 60000000, rangeStart:'', rangeEnd:'' },
-    actualRevenue: 0,
-    prevLink: { mode:'none', prevProjectId:'', manual:{ db:0, spend:0, revenue:0 } }
-  };
-}
 function defaultCompare(projectId=''){
   return {
     leftId: projectId || '',
@@ -678,23 +701,55 @@ function saveState(){
 const state = loadState();
 
 /** =========================
- *  Supabase 인증 / DB 매핑
+ *  인증
  *  ========================= */
 async function ensureAuth(){
-  let { data:{session}, error } = await sb.auth.getSession();
+  const { data:{session}, error } = await sb.auth.getSession();
   if(error) throw error;
-
-  if(!session){
-    const r = await sb.auth.signInAnonymously();
-    if(r.error) throw r.error;
-    session = r.data.session;
-  }
-  authSession = session;
-  return session;
+  authSession = session || null;
+  return authSession;
 }
 function ownerId(){
   return authSession?.user?.id || '';
 }
+function isLoggedIn(){
+  return !!authSession?.user?.id;
+}
+function getLoginEmailFromId(id){
+  const key = String(id || '').trim().toLowerCase();
+  return LOGIN_ID_MAP[key] || '';
+}
+async function loginWithIdPassword(id, password){
+  const email = getLoginEmailFromId(id);
+  if(!email) throw new Error('존재하지 않는 아이디야.');
+  if(!password) throw new Error('비밀번호를 입력해줘.');
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error) throw error;
+
+  authSession = data.session || null;
+  return data;
+}
+async function logout(){
+  const { error } = await sb.auth.signOut();
+  if(error) throw error;
+  authSession = null;
+}
+function requireLogin(){
+  if(!isLoggedIn()){
+    updateAuthUi();
+    throw new Error('로그인이 필요해.');
+  }
+}
+function loginIdLabelFromSession(){
+  const email = authSession?.user?.email || '';
+  if(email === 'classaround@gmail.com') return 'classaround';
+  return email || '';
+}
+
+/** =========================
+ *  DB 매핑
+ *  ========================= */
 function mapProjectRowToState(projectRow, ownedRows, adsRows){
   return {
     id: projectRow.id,
@@ -740,6 +795,12 @@ function mapProjectRowToState(projectRow, ownedRows, adsRows){
 async function loadStateFromDb(){
   await ensureAuth();
 
+  if(!isLoggedIn()){
+    state.projects = {};
+    state.currentProjectId = '';
+    return;
+  }
+
   const { data:projects, error:pErr } = await sb
     .from('projects')
     .select('*')
@@ -764,8 +825,7 @@ async function loadStateFromDb(){
   state.projects = {};
 
   if(!projects || projects.length===0){
-    await createProjectOnDb('숙사장', '4기(2/23)', true);
-    saveState();
+    state.currentProjectId = '';
     return;
   }
 
@@ -785,6 +845,7 @@ async function loadStateFromDb(){
 }
 async function createProjectOnDb(instructor, cohort, silent=false){
   await ensureAuth();
+  requireLogin();
 
   const payload = {
     owner_id: ownerId(),
@@ -821,6 +882,9 @@ async function createProjectOnDb(instructor, cohort, silent=false){
   return state.projects[data.id];
 }
 async function updateProjectMetaOnDb(project){
+  await ensureAuth();
+  requireLogin();
+
   const { error } = await sb
     .from('projects')
     .update({
@@ -841,6 +905,9 @@ async function updateProjectMetaOnDb(project){
   if(error) throw error;
 }
 async function deleteProjectOnDb(projectId){
+  await ensureAuth();
+  requireLogin();
+
   const { error } = await sb
     .from('projects')
     .delete()
@@ -851,11 +918,10 @@ async function deleteProjectOnDb(projectId){
   delete state.projects[projectId];
 
   const ids = Object.keys(state.projects);
-  if(ids.length===0){
-    await createProjectOnDb('숙사장', '4기(2/23)', true);
-  }else{
-    state.currentProjectId = ids[0];
-    if(!state.compare) state.compare = defaultCompare(state.currentProjectId);
+  state.currentProjectId = ids[0] || '';
+
+  if(!state.compare) state.compare = defaultCompare(state.currentProjectId);
+  if(state.currentProjectId){
     if(!state.projects[state.compare.leftId]) state.compare.leftId = state.currentProjectId;
     if(!state.projects[state.compare.rightId]) state.compare.rightId = state.currentProjectId;
   }
@@ -863,6 +929,7 @@ async function deleteProjectOnDb(projectId){
 }
 async function clearAllDataOnDb(){
   await ensureAuth();
+  requireLogin();
 
   const { error } = await sb
     .from('projects')
@@ -878,6 +945,7 @@ async function clearAllDataOnDb(){
 }
 async function upsertOwnedOnDb(projectId, date, media, addDb){
   await ensureAuth();
+  requireLogin();
 
   const payload = {
     owner_id: ownerId(),
@@ -901,6 +969,9 @@ async function upsertOwnedOnDb(projectId, date, media, addDb){
   else p.ownedEntries.push(rec);
 }
 async function deleteOwnedOnDb(projectId, date, media){
+  await ensureAuth();
+  requireLogin();
+
   const { error } = await sb
     .from('owned_entries')
     .delete()
@@ -917,6 +988,7 @@ async function deleteOwnedOnDb(projectId, date, media){
 }
 async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   await ensureAuth();
+  requireLogin();
 
   const payload = {
     owner_id: ownerId(),
@@ -948,6 +1020,9 @@ async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   else p.adsEntries.push(rec);
 }
 async function deleteAdsOnDb(projectId, date, platform){
+  await ensureAuth();
+  requireLogin();
+
   const { error } = await sb
     .from('ads_entries')
     .delete()
@@ -963,6 +1038,7 @@ async function deleteAdsOnDb(projectId, date, platform){
 async function bulkUpsertOwnedOnDb(projectId, rows){
   if(!rows.length) return;
   await ensureAuth();
+  requireLogin();
 
   const payload = rows.map(r => ({
     owner_id: ownerId(),
@@ -992,6 +1068,7 @@ async function bulkUpsertOwnedOnDb(projectId, rows){
 async function bulkUpsertAdsOnDb(projectId, rows){
   if(!rows.length) return;
   await ensureAuth();
+  requireLogin();
 
   const payload = rows.map(r => ({
     owner_id: ownerId(),
@@ -1030,6 +1107,8 @@ const $ = (id)=>document.getElementById(id);
 
 const curProjLabel = $('curProjLabel');
 const statDates = $('statDates');
+const authStatus = $('authStatus');
+const btnLogout = $('btnLogout');
 const btnReset = $('btnReset');
 const btnRecalc = $('btnRecalc');
 
@@ -1106,9 +1185,14 @@ const actualRevenue = $('actualRevenue');
 const btnSaveActualRevenue = $('btnSaveActualRevenue');
 const revenueCompareBox = $('revenueCompareBox');
 
+const loginOverlay = $('loginOverlay');
+const loginId = $('loginId');
+const loginPw = $('loginPw');
+const btnLogin = $('btnLogin');
+const loginMsg = $('loginMsg');
+
 const fileInput = $('fileInput');
 const tip = $('tooltip');
-
 const chartDb = $('chartDb');
 const chartDailySpend = $('chartDailySpend');
 
@@ -1132,12 +1216,15 @@ function hideTip(){ tip.style.display='none'; }
 function getProj(){ return state.projects[state.currentProjectId]; }
 function listProjects(){ return Object.values(state.projects || {}); }
 function projLabel(p){ return `${p.instructor} / ${p.cohort}`; }
+function hasProject(){ return !!getProj(); }
 
 function setCurrent(id){
   state.currentProjectId=id;
   if(!state.compare) state.compare = defaultCompare(id);
-  if(!state.projects[state.compare.leftId]) state.compare.leftId = id;
-  if(!state.projects[state.compare.rightId]) state.compare.rightId = id;
+  if(id){
+    if(!state.projects[state.compare.leftId]) state.compare.leftId = id;
+    if(!state.projects[state.compare.rightId]) state.compare.rightId = id;
+  }
   saveState();
   renderAll();
 }
@@ -1174,11 +1261,12 @@ function parseCSV(text){
 }
 
 /** =========================
- *  CRUD (UI 함수 → DB 연결)
+ *  CRUD UI wrappers
  *  ========================= */
 async function upsertOwned(date, media, addDb){
   const p=getProj();
   media=(media||'').trim();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date) return alert('날짜를 선택해줘');
   if(!media) return alert('매체를 입력해줘');
 
@@ -1187,12 +1275,13 @@ async function upsertOwned(date, media, addDb){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('온드DB 저장 실패');
+    alert(err?.message || '온드DB 저장 실패');
   }
 }
 async function deleteOwned(date, media){
   const p=getProj();
   media=(media||'').trim();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date||!media) return alert('삭제할 날짜+매체를 입력해줘');
 
   try{
@@ -1200,11 +1289,12 @@ async function deleteOwned(date, media){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('온드DB 삭제 실패');
+    alert(err?.message || '온드DB 삭제 실패');
   }
 }
 async function upsertAds(date, platform, spend, clicks, realDb){
   const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date) return alert('날짜를 선택해줘');
 
   try{
@@ -1212,11 +1302,12 @@ async function upsertAds(date, platform, spend, clicks, realDb){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('광고DB 저장 실패');
+    alert(err?.message || '광고DB 저장 실패');
   }
 }
 async function deleteAds(date, platform){
   const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
   if(!date||!platform) return alert('삭제할 날짜+매체를 선택해줘');
 
   try{
@@ -1224,7 +1315,7 @@ async function deleteAds(date, platform){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('광고DB 삭제 실패');
+    alert(err?.message || '광고DB 삭제 실패');
   }
 }
 
@@ -1291,22 +1382,6 @@ function computeAdAverages(p, platformFilter='all'){
 /** =========================
  *  이전기수 / 가치 계산
  *  ========================= */
-function getPrevDbForProject(p){
-  const mode = p.prevLink?.mode || 'none';
-  if(mode==='linked'){
-    const id = p.prevLink?.prevProjectId || '';
-    const prev = state.projects?.[id];
-    if(prev){
-      const { last } = buildMainRows(prev);
-      return last ? Number(last.recruitDb||0) : 0;
-    }
-    return 0;
-  }
-  if(mode==='manual'){
-    return Number(p.prevLink?.manual?.db || 0);
-  }
-  return 0;
-}
 function getPrevValuePerDbForProject(p){
   const mode = p.prevLink?.mode || 'none';
 
@@ -1345,7 +1420,6 @@ function buildMainRows(p){
 
   let ownedCum=0, paidCum=0, spendCum=0;
   const dailyBudget=Number(p.cfg.dailyBudget||0);
-
   const prevValuePerDb = getPrevValuePerDbForProject(p);
 
   const rows=[];
@@ -1381,6 +1455,8 @@ function buildMainRows(p){
  *  ========================= */
 async function importAdsCsvForPlatform(csvText, platform){
   const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+
   const rows=parseCSV(csvText);
   if(rows.length<2){ alert('CSV가 비어있어'); return; }
 
@@ -1400,24 +1476,20 @@ async function importAdsCsvForPlatform(csvText, platform){
   try{
     const payload = [];
     for(const [date,v] of agg.entries()){
-      payload.push({
-        date,
-        platform,
-        spend:v.spend,
-        clicks:v.clicks,
-        realDb:v.realDb
-      });
+      payload.push({ date, platform, spend:v.spend, clicks:v.clicks, realDb:v.realDb });
     }
     await bulkUpsertAdsOnDb(p.id, payload);
     renderAll();
     alert(`${platform==='meta'?'메타':'구글'} 업로드 완료: ${agg.size}일 반영`);
   }catch(err){
     console.error(err);
-    alert('광고 CSV 업로드 실패');
+    alert(err?.message || '광고 CSV 업로드 실패');
   }
 }
 async function importOwnedXlsx(file){
   const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+
   if(typeof XLSX === 'undefined'){
     alert('XLSX 로드 실패(CDN 차단 가능). CSV로 업로드해줘.');
     return;
@@ -1449,11 +1521,13 @@ async function importOwnedXlsx(file){
     alert(`온드 엑셀 업로드 완료: ${agg.size}개(일자×매체) 반영`);
   }catch(err){
     console.error(err);
-    alert('온드 엑셀 업로드 실패');
+    alert(err?.message || '온드 엑셀 업로드 실패');
   }
 }
 async function importOwnedCsv(csvText){
   const p=getProj();
+  if(!p) return alert('로그인 후 프로젝트를 먼저 선택해줘');
+
   const rows=parseCSV(csvText);
   if(rows.length<2){ alert('CSV가 비어있어'); return; }
 
@@ -1478,7 +1552,7 @@ async function importOwnedCsv(csvText){
     alert(`온드 CSV 업로드 완료: ${agg.size}개(일자×매체) 반영`);
   }catch(err){
     console.error(err);
-    alert('온드 CSV 업로드 실패');
+    alert(err?.message || '온드 CSV 업로드 실패');
   }
 }
 
@@ -1535,10 +1609,12 @@ function drawDbChart(canvas, rows){
   mainHover.dbPoints = [];
 
   if(!rows.length){
-    ctx.fillStyle='rgba(100,116,139,.9)'; ctx.font='12px system-ui';
+    ctx.fillStyle='rgba(100,116,139,.9)';
+    ctx.font='12px system-ui';
     ctx.fillText('데이터가 없습니다', x0+10, y0+20);
     return;
   }
+
   const maxY=Math.max(...rows.map(r=>r.ownedCum), ...rows.map(r=>r.paidCum), ...rows.map(r=>r.recruitDb)) || 1;
   const n=rows.length;
   const xs=i=> x0 + (x1-x0)*(n===1?0:i/(n-1));
@@ -1557,7 +1633,9 @@ function drawDbChart(canvas, rows){
     mainHover.dbPoints.push({
       x: xs(i),
       date: rows[i].date,
-      owned: rows[i].ownedCum, paid: rows[i].paidCum, recruit: rows[i].recruitDb
+      owned: rows[i].ownedCum,
+      paid: rows[i].paidCum,
+      recruit: rows[i].recruitDb
     });
   }
 }
@@ -1572,7 +1650,8 @@ function drawDailySpendChart(canvas, rows, dailyBudget){
   mainHover.spendPoints = [];
 
   if(!rows.length){
-    ctx.fillStyle='rgba(100,116,139,.9)'; ctx.font='12px system-ui';
+    ctx.fillStyle='rgba(100,116,139,.9)';
+    ctx.font='12px system-ui';
     ctx.fillText('데이터가 없습니다', x0+10, y0+20);
     return;
   }
@@ -1684,18 +1763,15 @@ function getFinalSnapshot(p){
     label: projLabel(p),
     instructor: p.instructor,
     cohort: p.cohort,
-
     recruitDb: recruitFinal,
     paidDb: paidFinal,
     ownedDb: ownedFinal,
-
     spend: spendFinal,
     clicks: adsAll.clicks,
     conv: adsAll.conv,
     avgCpc: adsAll.avgCpc,
     avgCpa: adsAll.avgCpa,
     cvr: adsAll.cvr,
-
     prevValuePerDb,
     valuePerDb,
     expectedRevenue: expectedFinal,
@@ -1709,7 +1785,6 @@ function metricDefs(){
     { key:'expectedRevenue', name:'예상 매출(이전 DB당가치×현모집DB)', type:'won', get:s=>s.expectedRevenue },
     { key:'valuePerDb',      name:'DB당 가치(실매출/모집DB)', type:'won', get:s=>s.valuePerDb },
     { key:'prevValuePerDb',  name:'이전기수 DB당 가치(이전실매출/이전모집DB)', type:'won', get:s=>s.prevValuePerDb },
-
     { key:'spend',  name:'광고비(총예산)', type:'won',  get:s=>s.spend },
     { key:'roas',   name:'ROAS(실매출/예산)', type:'x',  get:s=>s.roas },
     { key:'recruitDb', name:'모집DB(Owned+Paid)', type:'int', get:s=>s.recruitDb },
@@ -1809,7 +1884,8 @@ function drawCompareBarChart(canvas, items){
   compareHover.items = [];
 
   if(!items.length){
-    ctx.fillStyle='rgba(100,116,139,.9)'; ctx.font='12px system-ui';
+    ctx.fillStyle='rgba(100,116,139,.9)';
+    ctx.font='12px system-ui';
     ctx.fillText('표시할 데이터가 없습니다', x0+10, y0+20);
     return;
   }
@@ -1905,9 +1981,10 @@ function drawCompareBarChart(canvas, items){
 }
 
 function renderCompareVs(){
+  if(!hasProject()) return;
   ensureCompareIds();
-  const ps=listProjects().sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
 
+  const ps=listProjects().sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
   setOptionsPreserve(cmpLeftProj,  ps.map(p=>({value:p.id, label:projLabel(p)})), state.compare.leftId);
   setOptionsPreserve(cmpRightProj, ps.map(p=>({value:p.id, label:projLabel(p)})), state.compare.rightId);
 
@@ -1916,6 +1993,7 @@ function renderCompareVs(){
 
   const leftP = state.projects[state.compare.leftId];
   const rightP= state.projects[state.compare.rightId];
+  if(!leftP || !rightP) return;
 
   const leftSnap = getFinalSnapshot(leftP);
   const rightSnap= getFinalSnapshot(rightP);
@@ -1943,7 +2021,9 @@ function renderCompareVs(){
   saveState();
 }
 function renderCompareGraphControls(){
+  if(!hasProject()) return;
   ensureCompareIds();
+
   cmpMode.value = state.compare.mode || cmpMode.value || 'project';
   cmpSort.value = state.compare.sort || cmpSort.value || 'desc';
 
@@ -2012,11 +2092,19 @@ function buildCompareGraphData(){
   return {items,title,subtitle};
 }
 function renderCompareGraph(){
+  if(!hasProject()){
+    cmpGraphTitle.textContent = '-';
+    cmpGraphSub.textContent = '로그인 후 데이터를 불러와줘';
+    requestAnimationFrame(()=> drawCompareBarChart(chartCompare, []));
+    return;
+  }
+
   renderCompareGraphControls();
   const {items,title,subtitle}=buildCompareGraphData();
   cmpGraphTitle.textContent = title;
   cmpGraphSub.textContent = subtitle;
   requestAnimationFrame(()=> drawCompareBarChart(chartCompare, items));
+
   state.compare.mode = cmpMode.value;
   state.compare.instructorFilter = cmpInstructorFilter.value;
   state.compare.metric = cmpMetric.value;
@@ -2024,12 +2112,98 @@ function renderCompareGraph(){
   saveState();
 }
 function renderCompare(){
+  if(!hasProject()){
+    cmpVsTbody.innerHTML = '';
+    cmpLeftTitle.textContent = '-';
+    cmpRightTitle.textContent = '-';
+    renderCompareGraph();
+    return;
+  }
   renderCompareVs();
   renderCompareGraph();
 }
 
 /** =========================
- *  UI render
+ *  Empty / Auth UI
+ *  ========================= */
+function updateAuthUi(){
+  if(isLoggedIn()){
+    authStatus.textContent = loginIdLabelFromSession() || '로그인됨';
+    btnLogout.style.display = '';
+    loginOverlay.style.display = 'none';
+  }else{
+    authStatus.textContent = '미로그인';
+    btnLogout.style.display = 'none';
+    loginOverlay.style.display = 'flex';
+  }
+}
+function resetUiForNoProject(){
+  curProjLabel.textContent = isLoggedIn() ? '프로젝트 없음' : '로그인 필요';
+  curInstructor.textContent = '-';
+  curCohort.textContent = '-';
+  statDates.textContent = '0';
+
+  projSelect.innerHTML = '';
+  cmpLeftProj.innerHTML = '';
+  cmpRightProj.innerHTML = '';
+  prevProjSelect.innerHTML = '<option value="">(선택)</option>';
+  ownedFilter.innerHTML = '<option value="all">전체</option>';
+  adsFilter.value = 'all';
+
+  kpiTotalDb.textContent = '0';
+  kpiPaidDb.textContent = '0';
+  kpiOwnedDb.textContent = '0';
+  kpiExpectedRev.textContent = '₩0';
+
+  kpiAvgCpc.textContent = '₩0';
+  kpiAvgCpa.textContent = '₩0';
+  kpiCvr.textContent = '0.00%';
+  kpiAdSpend.textContent = '₩0';
+
+  cfgDailyBudget.value = '';
+  cfgValuePerDb.value = '';
+  actualRevenue.value = '';
+  rangeStart.value = '';
+  rangeEnd.value = '';
+  prevDb.value = '';
+  prevSpend.value = '';
+  prevRevenue.value = '';
+  prevLinkInfo.textContent = '현재: 이전기수 미연결';
+  revenueCompareBox.textContent = isLoggedIn()
+    ? '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨'
+    : '로그인 후 프로젝트를 불러오면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
+
+  mainTbody.innerHTML = `
+    <tr>
+      <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트가 없습니다. 새 프로젝트를 만들어줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td>
+    </tr>
+  `;
+  ownedTbody.innerHTML = `
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">
+      ${isLoggedIn() ? '데이터가 없습니다.' : '로그인 후 데이터를 불러와줘.'}
+    </td></tr>
+  `;
+  adsTbody.innerHTML = `
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">
+      ${isLoggedIn() ? '데이터가 없습니다.' : '로그인 후 데이터를 불러와줘.'}
+    </td></tr>
+  `;
+  cmpVsTbody.innerHTML = '';
+
+  cmpGraphTitle.textContent = '-';
+  cmpGraphSub.textContent = isLoggedIn() ? '프로젝트를 불러오면 비교 그래프가 여기 표시됨' : '로그인 후 데이터를 불러와줘';
+
+  requestAnimationFrame(()=>{
+    drawDbChart(chartDb, []);
+    drawDailySpendChart(chartDailySpend, [], 0);
+    drawCompareBarChart(chartCompare, []);
+  });
+}
+
+/** =========================
+ *  Render
  *  ========================= */
 function refreshProjectSelect(){
   const ps=listProjects().sort((a,b)=>projLabel(a).localeCompare(projLabel(b)));
@@ -2039,6 +2213,12 @@ function refreshProjectSelect(){
 }
 function refreshHeaderBadges(){
   const p=getProj();
+  if(!p){
+    curProjLabel.textContent = isLoggedIn() ? '프로젝트 없음' : '로그인 필요';
+    curInstructor.textContent = '-';
+    curCohort.textContent = '-';
+    return;
+  }
   curProjLabel.textContent = projLabel(p);
   curInstructor.textContent = p.instructor;
   curCohort.textContent = p.cohort;
@@ -2049,6 +2229,15 @@ function uniqueOwnedMedias(p){
 }
 function renderOwned(){
   const p=getProj();
+  if(!p){
+    ownedTbody.innerHTML = `
+      <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트를 먼저 선택해줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td></tr>
+    `;
+    return;
+  }
+
   const cur=ownedFilter.value || 'all';
   const opts=['all', ...uniqueOwnedMedias(p)];
   ownedFilter.innerHTML = opts.map(v=>`<option value="${esc(v)}">${esc(v==='all'?'전체':v)}</option>`).join('');
@@ -2060,16 +2249,31 @@ function renderOwned(){
     .filter(e=> f==='all' ? true : (e.media||'').trim()===f)
     .sort((a,b)=> (a.date===b.date ? (a.media||'').localeCompare(b.media||'') : a.date.localeCompare(b.date)));
 
-  ownedTbody.innerHTML = rows.map(r=>`
+  ownedTbody.innerHTML = rows.length ? rows.map(r=>`
     <tr>
       <td class="sticky">${r.date}</td>
       <td>${esc((r.media||'').trim())}</td>
       <td class="num">${fmtInt(r.addDb)}</td>
     </tr>
-  `).join('');
+  `).join('') : `
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>
+  `;
 }
 function renderAds(){
   const p=getProj();
+  if(!p){
+    kpiAvgCpc.textContent = '₩0';
+    kpiAvgCpa.textContent = '₩0';
+    kpiCvr.textContent = '0.00%';
+    kpiAdSpend.textContent = '₩0';
+    adsTbody.innerHTML = `
+      <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">
+        ${isLoggedIn() ? '프로젝트를 먼저 선택해줘.' : '로그인 후 데이터를 불러와줘.'}
+      </td></tr>
+    `;
+    return;
+  }
+
   const f=adsFilter.value || 'all';
   const rows=[...p.adsEntries]
     .filter(e=>e.date && e.platform)
@@ -2082,7 +2286,7 @@ function renderAds(){
   kpiCvr.textContent    = fmtRate(m.cvr);
   kpiAdSpend.textContent= fmtWon(m.spend);
 
-  adsTbody.innerHTML = rows.map(r=>{
+  adsTbody.innerHTML = rows.length ? rows.map(r=>{
     const cpc = (r.clicks>0) ? (r.spend/r.clicks) : null;
     const cpa = (r.realDb>0) ? (r.spend/r.realDb) : null;
     const cvr = (r.clicks>0) ? (r.realDb/r.clicks) : null;
@@ -2098,10 +2302,32 @@ function renderAds(){
         <td class="center mono">${cvr===null?'':fmtRate(cvr)}</td>
       </tr>
     `;
-  }).join('');
+  }).join('') : `
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td></tr>
+  `;
 }
 function renderMain(){
   const p=getProj();
+  if(!p){
+    statDates.textContent='0';
+    kpiTotalDb.textContent='0';
+    kpiPaidDb.textContent='0';
+    kpiOwnedDb.textContent='0';
+    kpiExpectedRev.textContent='₩0';
+    mainTbody.innerHTML = `
+      <tr>
+        <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">
+          ${isLoggedIn() ? '프로젝트를 먼저 만들어줘.' : '로그인 후 데이터를 불러와줘.'}
+        </td>
+      </tr>
+    `;
+    requestAnimationFrame(()=>{
+      drawDbChart(chartDb, []);
+      drawDailySpendChart(chartDailySpend, [], 0);
+    });
+    return;
+  }
+
   const {rows,last}=buildMainRows(p);
   statDates.textContent=rows.length;
 
@@ -2117,7 +2343,7 @@ function renderMain(){
     kpiExpectedRev.textContent=fmtWon(last.expectedRev);
   }
 
-  mainTbody.innerHTML = rows.map((r)=>`
+  mainTbody.innerHTML = rows.length ? rows.map((r)=>`
     <tr>
       <td class="sticky">${r.date}</td>
       <td class="num">${fmtInt(r.ownedCum)}</td>
@@ -2129,7 +2355,11 @@ function renderMain(){
       <td class="center mono">${r.spendRate===null?'':fmtRate(r.spendRate)}</td>
       <td class="num">${fmtWon(r.expectedRev)}</td>
     </tr>
-  `).join('');
+  `).join('') : `
+    <tr>
+      <td class="sticky" colspan="9" style="text-align:center;color:#64748b;padding:24px 10px">데이터가 없습니다.</td>
+    </tr>
+  `;
 
   requestAnimationFrame(()=>{
     drawDbChart(chartDb, rows);
@@ -2138,6 +2368,21 @@ function renderMain(){
 }
 function refreshSettingsUI(){
   const p=getProj();
+  if(!p){
+    cfgDailyBudget.value = '';
+    cfgValuePerDb.value = '';
+    actualRevenue.value = '';
+    prevDb.value = '';
+    prevSpend.value = '';
+    prevRevenue.value = '';
+    prevProjSelect.innerHTML = '<option value="">(선택)</option>';
+    prevLinkInfo.textContent = '현재: 이전기수 미연결';
+    revenueCompareBox.textContent = isLoggedIn()
+      ? '프로젝트를 생성하면 실매출/DB당가치/예상매출 비교가 여기 표시됨'
+      : '로그인 후 프로젝트를 불러오면 실매출/DB당가치/예상매출 비교가 여기 표시됨';
+    return;
+  }
+
   cfgDailyBudget.value = p.cfg.dailyBudget ?? 0;
   rangeStart.value = p.cfg.rangeStart ?? '';
   rangeEnd.value   = p.cfg.rangeEnd ?? '';
@@ -2167,6 +2412,7 @@ function refreshSettingsUI(){
     prevProjSelect.value = linkedId;
     prevLinkInfo.textContent = `현재: 이전기수 연결됨 → ${projLabel(state.projects[linkedId])} (이전 DB당가치=${fmtWon(prevValuePerDbFinal)})`;
   }else if(mode==='manual'){
+    prevProjSelect.value = '';
     prevLinkInfo.textContent = `현재: 이전기수 수동값 사용중 (이전 DB당가치=${fmtWon(prevValuePerDbFinal)})`;
   }else{
     prevProjSelect.value = '';
@@ -2181,14 +2427,23 @@ function refreshSettingsUI(){
     `<b>이전기수 DB당 가치</b> ${fmtWon(prevValuePerDbFinal)} → <b>예상매출</b> ${fmtWon(expected)} (이전 DB당가치×현 모집DB)`;
 }
 function renderAll(){
-  if(!getProj()) return;
+  updateAuthUi();
+
+  if(!hasProject()){
+    resetUiForNoProject();
+    return;
+  }
+
   refreshProjectSelect();
   refreshHeaderBadges();
   renderMain();
   renderOwned();
   renderAds();
-  const cmpVisible  = $('view-compare').style.display !== 'none';
+
+  const cmpVisible = $('view-compare').style.display !== 'none';
   if(cmpVisible) renderCompare();
+  else renderCompareGraph();
+
   refreshSettingsUI();
 }
 
@@ -2207,11 +2462,13 @@ async function createProject(){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('프로젝트 생성 실패');
+    alert(err?.message || '프로젝트 생성 실패');
   }
 }
 async function duplicateProject(){
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
   const newCohort = prompt('복제본 기수/라벨', `${p.cohort} (복제)`)?.trim();
   if(!newCohort) return;
 
@@ -2240,11 +2497,12 @@ async function duplicateProject(){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('프로젝트 복제 실패');
+    alert(err?.message || '프로젝트 복제 실패');
   }
 }
 async function deleteProject(){
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
   if(!confirm(`프로젝트 삭제할까?\n- ${projLabel(p)}\n(되돌릴 수 없음)`)) return;
 
   try{
@@ -2252,12 +2510,12 @@ async function deleteProject(){
     renderAll();
   }catch(err){
     console.error(err);
-    alert('프로젝트 삭제 실패');
+    alert(err?.message || '프로젝트 삭제 실패');
   }
 }
 
 /** =========================
- *  Events
+ *  Tabs
  *  ========================= */
 document.querySelectorAll('.tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -2273,6 +2531,9 @@ document.querySelectorAll('.tab').forEach(btn=>{
   });
 });
 
+/** =========================
+ *  General events
+ *  ========================= */
 projSelect.addEventListener('change', ()=> setCurrent(projSelect.value));
 btnNewProj.addEventListener('click', createProject);
 btnDupProj.addEventListener('click', duplicateProject);
@@ -2281,18 +2542,21 @@ btnDelProj.addEventListener('click', deleteProject);
 btnRecalc.addEventListener('click', ()=> renderAll());
 
 btnReset.addEventListener('click', async ()=>{
+  if(!isLoggedIn()) return alert('로그인 후 사용할 수 있어');
   if(!confirm('정말 전체 초기화할까? (모든 프로젝트/데이터 삭제)')) return;
   try{
     await clearAllDataOnDb();
-    location.reload();
+    renderAll();
   }catch(err){
     console.error(err);
-    alert('전체 초기화 실패');
+    alert(err?.message || '전체 초기화 실패');
   }
 });
 
 btnSaveRange.addEventListener('click', async ()=>{
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
   p.cfg.rangeStart=(rangeStart.value||'').trim();
   p.cfg.rangeEnd=(rangeEnd.value||'').trim();
 
@@ -2303,7 +2567,7 @@ btnSaveRange.addEventListener('click', async ()=>{
     alert('범위 저장 완료');
   }catch(err){
     console.error(err);
-    alert('범위 저장 실패');
+    alert(err?.message || '범위 저장 실패');
   }
 });
 
@@ -2320,6 +2584,8 @@ adsFilter.addEventListener('change', ()=> renderAds());
 // settings
 btnSaveCfg.addEventListener('click', async ()=>{
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
   p.cfg.dailyBudget=Number(cfgDailyBudget.value||0);
   try{
     await updateProjectMetaOnDb(p);
@@ -2327,11 +2593,13 @@ btnSaveCfg.addEventListener('click', async ()=>{
     alert('설정 저장 완료');
   }catch(err){
     console.error(err);
-    alert('설정 저장 실패');
+    alert(err?.message || '설정 저장 실패');
   }
 });
 btnSaveActualRevenue.addEventListener('click', async ()=>{
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
   p.actualRevenue = Number(actualRevenue.value||0);
   try{
     await updateProjectMetaOnDb(p);
@@ -2339,13 +2607,16 @@ btnSaveActualRevenue.addEventListener('click', async ()=>{
     alert('실매출 저장 완료');
   }catch(err){
     console.error(err);
-    alert('실매출 저장 실패');
+    alert(err?.message || '실매출 저장 실패');
   }
 });
 btnLinkPrev.addEventListener('click', async ()=>{
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
   const id=(prevProjSelect.value||'').trim();
   if(!id) return alert('이전기수 프로젝트를 선택해줘');
+
   p.prevLink = { mode:'linked', prevProjectId:id, manual:{db:0,spend:0,revenue:0} };
 
   try{
@@ -2354,23 +2625,26 @@ btnLinkPrev.addEventListener('click', async ()=>{
     alert('이전기수 연결 완료');
   }catch(err){
     console.error(err);
-    alert('이전기수 연결 실패');
+    alert(err?.message || '이전기수 연결 실패');
   }
 });
 btnUnlinkPrev.addEventListener('click', async ()=>{
   const p=getProj();
-  p.prevLink = { mode:'none', prevProjectId:'', manual:{db:0,spend:0,revenue:0} };
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
 
+  p.prevLink = { mode:'none', prevProjectId:'', manual:{db:0,spend:0,revenue:0} };
   try{
     await updateProjectMetaOnDb(p);
     renderAll();
   }catch(err){
     console.error(err);
-    alert('이전기수 해제 실패');
+    alert(err?.message || '이전기수 해제 실패');
   }
 });
 btnSavePrevManual.addEventListener('click', async ()=>{
   const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
   p.prevLink = {
     mode:'manual',
     prevProjectId:'',
@@ -2387,7 +2661,7 @@ btnSavePrevManual.addEventListener('click', async ()=>{
     alert('이전기수 수동값 저장 완료');
   }catch(err){
     console.error(err);
-    alert('이전기수 수동값 저장 실패');
+    alert(err?.message || '이전기수 수동값 저장 실패');
   }
 });
 
@@ -2459,7 +2733,7 @@ btnApplyCompare.addEventListener('click', ()=>{
 });
 
 /** =========================
- *  Tooltips on compare
+ *  Compare tooltip
  *  ========================= */
 chartCompare.addEventListener('mousemove', (ev)=>{
   const rect=chartCompare.getBoundingClientRect();
@@ -2479,7 +2753,7 @@ chartCompare.addEventListener('mousemove', (ev)=>{
 chartCompare.addEventListener('mouseleave', hideTip);
 
 /** =========================
- *  Main tooltips
+ *  Main chart tooltip
  *  ========================= */
 function nearestPoint(points, mx, my, radius=10){
   let best=null, bestD=Infinity;
@@ -2531,6 +2805,44 @@ window.addEventListener('resize', ()=>{
 });
 
 /** =========================
+ *  Login events
+ *  ========================= */
+btnLogin.addEventListener('click', async ()=>{
+  loginMsg.textContent = '';
+  try{
+    await loginWithIdPassword(loginId.value, loginPw.value);
+    loginPw.value = '';
+    updateAuthUi();
+    await loadStateFromDb();
+    if(Object.keys(state.projects).length > 0){
+      ensureCompareIds();
+    }
+    renderAll();
+  }catch(err){
+    console.error(err);
+    loginMsg.textContent = err?.message || '로그인 실패';
+  }
+});
+
+loginPw.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') btnLogin.click();
+});
+
+btnLogout.addEventListener('click', async ()=>{
+  try{
+    await logout();
+    state.projects = {};
+    state.currentProjectId = '';
+    state.compare = defaultCompare('');
+    saveState();
+    renderAll();
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '로그아웃 실패');
+  }
+});
+
+/** =========================
  *  init
  *  ========================= */
 (async function init(){
@@ -2539,12 +2851,19 @@ window.addEventListener('resize', ()=>{
     ownedDate.value=today;
     adsDate.value=today;
 
-    await loadStateFromDb();
-    ensureCompareIds();
+    await ensureAuth();
+    updateAuthUi();
+
+    if(isLoggedIn()){
+      await loadStateFromDb();
+      if(Object.keys(state.projects).length > 0){
+        ensureCompareIds();
+      }
+    }
     renderAll();
   }catch(err){
     console.error(err);
-    alert('초기 로딩 실패: Supabase URL / anon key / Anonymous 로그인 / SQL 테이블 설정을 확인해줘');
+    alert('초기 로딩 실패: Supabase URL / anon key / Email 로그인 / RLS 설정을 확인해줘');
   }
 })();
 </script>
