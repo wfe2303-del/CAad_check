@@ -237,6 +237,13 @@
     .modalOverlay{position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:120;padding:20px}
     .modalOverlay.open{display:flex}
     .modalCard{width:min(920px,96vw);max-height:88vh;overflow:hidden;background:#fff;border:1px solid var(--bd);border-radius:22px;box-shadow:0 25px 70px rgba(15,23,42,.24);display:flex;flex-direction:column}
+    .loadingOverlay{position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:130;padding:20px}
+    .loadingOverlay.open{display:flex}
+    .loadingCard{width:min(360px,calc(100vw - 32px));background:#fff;border:1px solid var(--bd);border-radius:22px;box-shadow:0 25px 70px rgba(15,23,42,.24);padding:24px;display:grid;gap:14px;justify-items:center;text-align:center}
+    .loadingSpinner{width:44px;height:44px;border-radius:999px;border:4px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite}
+    .loadingTitle{font-size:18px;font-weight:1000;color:#0f172a}
+    .loadingSub{font-size:12px;color:#64748b;line-height:1.5}
+    @keyframes spin{to{transform:rotate(360deg)}}
     .modalHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 10px;border-bottom:1px solid #eef2f7}
     .modalTitle{font-size:18px;font-weight:900;margin:0}
     .modalSub{font-size:12px;color:var(--muted);margin-top:4px}
@@ -298,6 +305,7 @@
           <div class="menuActions">
             <button id="btnNewProj" class="btn-primary">새 프로젝트</button>
             <button id="btnDupProj">복제</button>
+            <button id="btnRenameProj">이름 변경</button>
             <button id="btnDelProj" class="btn-danger">삭제</button>
             <button id="btnImportProjCsv">강사별 기수정리 업로드</button>
               <button id="btnImportProjZip">ZIP 광고DB 일괄등록</button>
@@ -463,9 +471,10 @@
           <div class="calendarHead">
             <div>
               <div class="calendarTitle">온드DB 달력형 편집</div>
-              <div class="small">날짜 칸을 여러 개 클릭하면 아래에 선택한 날짜 내역만 보여줘.</div>
+              <div class="small">기본은 전체 내역 표시, 날짜 칸을 클릭하면 선택한 날짜만 필터해서 보여줘.</div>
             </div>
             <div class="row">
+              <button id="btnOwnedClearSelection">날짜선택 해제</button>
               <button id="btnOwnedPrevMonth">◀ 이전달</button>
               <div id="ownedMonthLabel" class="badge"><b>-</b></div>
               <button id="btnOwnedNextMonth">다음달 ▶</button>
@@ -559,9 +568,10 @@
           <div class="calendarHead">
             <div>
               <div class="calendarTitle">광고DB 달력형 편집</div>
-              <div class="small">날짜 칸을 누르면 아래 입력칸 날짜가 자동으로 들어가.</div>
+              <div class="small">기본은 전체 내역 표시, 날짜 칸을 누르면 해당 날짜만 필터하고 입력칸 날짜도 자동으로 들어가.</div>
             </div>
             <div class="row">
+              <button id="btnAdsClearSelection">날짜선택 해제</button>
               <button id="btnAdsPrevMonth">◀ 이전달</button>
               <div id="adsMonthLabel" class="badge"><b>-</b></div>
               <button id="btnAdsNextMonth">다음달 ▶</button>
@@ -826,6 +836,14 @@
   </div>
 </div>
 
+<div id="loadingOverlay" class="loadingOverlay" aria-hidden="true">
+  <div class="loadingCard" role="status" aria-live="polite">
+    <div class="loadingSpinner"></div>
+    <div class="loadingTitle" id="loadingTitle">업로드 중</div>
+    <div class="loadingSub" id="loadingSub">파일을 읽고 데이터를 반영하고 있어. 잠시만 기다려줘.</div>
+  </div>
+</div>
+
 <div id="tooltip" class="tip"></div>
 <div id="toast" class="toast"><div class="ttl"></div><div class="msg"></div></div>
 
@@ -1034,6 +1052,43 @@ function loginIdLabelFromSession(){
   return email || '';
 }
 
+async function fetchAllRows(table, orderCol, ascending=true, pageSize=1000){
+  await ensureAuth();
+  requireLogin();
+
+  const all = [];
+  let from = 0;
+
+  while(true){
+    const to = from + pageSize - 1;
+    const { data, error } = await sb
+      .from(table)
+      .select('*')
+      .order(orderCol, { ascending })
+      .range(from, to);
+
+    if(error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    all.push(...rows);
+    if(rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return all;
+}
+
+function groupRowsByProjectId(rows){
+  const map = new Map();
+  for(const row of (rows || [])){
+    const key = row.project_id;
+    if(!key) continue;
+    if(!map.has(key)) map.set(key, []);
+    map.get(key).push(row);
+  }
+  return map;
+}
+
 /** =========================
  *  DB 매핑
  *  ========================= */
@@ -1042,15 +1097,13 @@ function mapProjectRowToState(projectRow, ownedRows, adsRows){
     id: projectRow.id,
     instructor: projectRow.instructor,
     cohort: projectRow.cohort,
-    ownedEntries: ownedRows
-      .filter(x => x.project_id === projectRow.id)
+    ownedEntries: (ownedRows || [])
       .map(x => ({
         date: x.entry_date,
         media: x.media,
         addDb: Number(x.add_db || 0)
       })),
-    adsEntries: adsRows
-      .filter(x => x.project_id === projectRow.id)
+    adsEntries: (adsRows || [])
       .map(x => ({
         date: x.entry_date,
         platform: x.platform,
@@ -1099,19 +1152,13 @@ async function loadStateFromDb(){
 
   if(pErr) throw pErr;
 
-  const { data:ownedRows, error:oErr } = await sb
-    .from('owned_entries')
-    .select('*')
-    .order('entry_date', { ascending:true });
+  const [ownedRows, adsRows] = await Promise.all([
+    fetchAllRows('owned_entries', 'entry_date', true, 1000),
+    fetchAllRows('ads_entries', 'entry_date', true, 1000)
+  ]);
 
-  if(oErr) throw oErr;
-
-  const { data:adsRows, error:aErr } = await sb
-    .from('ads_entries')
-    .select('*')
-    .order('entry_date', { ascending:true });
-
-  if(aErr) throw aErr;
+  const ownedMap = groupRowsByProjectId(ownedRows);
+  const adsMap = groupRowsByProjectId(adsRows);
 
   state.projects = {};
 
@@ -1121,7 +1168,11 @@ async function loadStateFromDb(){
   }
 
   for(const row of projects){
-    state.projects[row.id] = mapProjectRowToState(row, ownedRows || [], adsRows || []);
+    state.projects[row.id] = mapProjectRowToState(
+      row,
+      ownedMap.get(row.id) || [],
+      adsMap.get(row.id) || []
+    );
   }
 
   const firstId = projects[0].id;
@@ -1437,6 +1488,7 @@ const projectMenuList = $('projectMenuList');
 const btnImportProjZip = $('btnImportProjZip');
 const btnNewProj = $('btnNewProj');
 const btnDupProj = $('btnDupProj');
+const btnRenameProj = $('btnRenameProj');
 const btnDelProj = $('btnDelProj');
 const curInstructor = $('curInstructor');
 const curCohort = $('curCohort');
@@ -1462,6 +1514,7 @@ const btnDelOwned = $('btnDelOwned');
 const ownedTbody = $('ownedTbody');
 const ownedCalendar = $('ownedCalendar');
 const ownedMonthLabel = $('ownedMonthLabel');
+const btnOwnedClearSelection = $('btnOwnedClearSelection');
 const btnOwnedPrevMonth = $('btnOwnedPrevMonth');
 const btnOwnedNextMonth = $('btnOwnedNextMonth');
 
@@ -1478,6 +1531,7 @@ const btnDelAds = $('btnDelAds');
 const adsTbody = $('adsTbody');
 const adsCalendar = $('adsCalendar');
 const adsMonthLabel = $('adsMonthLabel');
+const btnAdsClearSelection = $('btnAdsClearSelection');
 const btnAdsPrevMonth = $('btnAdsPrevMonth');
 const btnAdsNextMonth = $('btnAdsNextMonth');
 const kpiAvgCpc = $('kpiAvgCpc');
@@ -1527,6 +1581,26 @@ const loginMsg = $('loginMsg');
 const fileInput = $('fileInput');
 const zipFileInput = $('zipFileInput');
 const zipPreviewModal = $('zipPreviewModal');
+const loadingOverlay = $('loadingOverlay');
+const loadingTitleEl = $('loadingTitle');
+const loadingSubEl = $('loadingSub');
+
+function showLoading(title='로딩 중', sub='파일을 읽고 데이터를 반영하고 있어. 잠시만 기다려줘.') {
+  if(loadingTitleEl) loadingTitleEl.textContent = title;
+  if(loadingSubEl) loadingSubEl.textContent = sub;
+  if(loadingOverlay){
+    loadingOverlay.classList.add('open');
+    loadingOverlay.setAttribute('aria-hidden','false');
+  }
+  document.body.style.overflow = 'hidden';
+}
+function hideLoading(){
+  if(loadingOverlay){
+    loadingOverlay.classList.remove('open');
+    loadingOverlay.setAttribute('aria-hidden','true');
+  }
+  if(!zipPreviewModal?.classList.contains('open')) document.body.style.overflow = '';
+}
 const btnZipPreviewClose = $('btnZipPreviewClose');
 const btnZipPreviewCancel = $('btnZipPreviewCancel');
 const btnZipPreviewApply = $('btnZipPreviewApply');
@@ -1831,7 +1905,11 @@ async function applyZipAdsPreview(mode='skip'){
     await loadStateFromDb();
   }
 
-  if(lastId && state.projects[lastId]) state.currentProjectId = lastId;
+  if(state.currentProjectId && state.projects[state.currentProjectId]){
+    // keep current project selection after ZIP import
+  }else if(lastId && state.projects[lastId]){
+    state.currentProjectId = lastId;
+  }
   saveState();
   renderAll();
   closeZipPreview();
@@ -3098,7 +3176,7 @@ function renderOwned(){
   const rows=[...p.ownedEntries]
     .filter(e=>e.date && (e.media||'').trim()!=='')
     .filter(e=> f==='all' ? true : (e.media||'').trim()===f)
-    .filter(e=> selectedDates.length ? selectedDates.includes(e.date) : false)
+    .filter(e=> selectedDates.length ? selectedDates.includes(e.date) : true)
     .sort((a,b)=> (a.date===b.date ? (a.media||'').localeCompare(b.media||'') : a.date.localeCompare(b.date)));
 
   renderOwnedCalendar();
@@ -3109,7 +3187,7 @@ function renderOwned(){
       <td class="num">${fmtInt(r.addDb)}</td>
     </tr>
   `).join('') : `
-    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">${selectedDates.length ? '선택한 날짜에 데이터가 없습니다.' : '달력에서 날짜를 하나 이상 클릭하면 해당 내역만 표시됩니다.'}</td></tr>
+    <tr><td class="sticky" colspan="3" style="text-align:center;color:#64748b;padding:24px 10px">${selectedDates.length ? '선택한 날짜에 데이터가 없습니다.' : '등록된 온드DB가 없습니다.'}</td></tr>
   `;
 }function renderAds(){
   const p=getProj();
@@ -3132,7 +3210,7 @@ function renderOwned(){
   const rows=[...p.adsEntries]
     .filter(e=>e.date && e.platform)
     .filter(e=> f==='all' ? true : e.platform===f)
-    .filter(e=> selectedDates.length ? selectedDates.includes(e.date) : false)
+    .filter(e=> selectedDates.length ? selectedDates.includes(e.date) : true)
     .sort((a,b)=> (a.date===b.date ? a.platform.localeCompare(b.platform) : a.date.localeCompare(b.date)));
 
   const m=computeAdAverages(p, f);
@@ -3159,7 +3237,7 @@ function renderOwned(){
       </tr>
     `;
   }).join('') : `
-    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">${selectedDates.length ? '선택한 날짜에 데이터가 없습니다.' : '달력에서 날짜를 하나 이상 클릭하면 해당 내역만 표시됩니다.'}</td></tr>
+    <tr><td class="sticky" colspan="8" style="text-align:center;color:#64748b;padding:24px 10px">${selectedDates.length ? '선택한 날짜에 데이터가 없습니다.' : '등록된 광고DB가 없습니다.'}</td></tr>
   `;
 }function escapeHtml(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function escapeAttr(s){ return String(s??'').replaceAll('"','&quot;'); }
@@ -3595,6 +3673,38 @@ async function createProject(){
     alert(err?.message || '프로젝트 생성 실패');
   }
 }
+async function renameProject(){
+  const p=getProj();
+  if(!p) return alert('프로젝트를 먼저 선택해줘');
+
+  const nextInstructor = prompt('변경할 강사명', p.instructor)?.trim();
+  if(!nextInstructor) return;
+
+  const nextCohort = prompt('변경할 기수/라벨', p.cohort)?.trim();
+  if(!nextCohort) return;
+
+  if(nextInstructor===p.instructor && nextCohort===p.cohort){
+    toast('변경된 내용이 없어');
+    return;
+  }
+
+  const dup = Object.values(state.projects).find(x => x.id!==p.id && String(x.instructor||'').trim()===nextInstructor && String(x.cohort||'').trim()===nextCohort);
+  if(dup){
+    return alert(`같은 프로젝트명이 이미 있어.\n- ${projLabel(dup)}`);
+  }
+
+  try{
+    p.instructor = nextInstructor;
+    p.cohort = nextCohort;
+    await updateProjectMetaOnDb(p);
+    renderAll();
+    toast('프로젝트 이름을 변경했어');
+  }catch(err){
+    console.error(err);
+    alert(err?.message || '프로젝트 이름 변경 실패');
+  }
+}
+
 async function duplicateProject(){
   const p=getProj();
   if(!p) return alert('프로젝트를 먼저 선택해줘');
@@ -3677,6 +3787,7 @@ document.addEventListener('click', (e)=>{
 });
 btnNewProj.addEventListener('click', createProject);
 btnDupProj.addEventListener('click', duplicateProject);
+btnRenameProj?.addEventListener('click', renameProject);
 btnDelProj.addEventListener('click', deleteProject);
 
 btnRecalc.addEventListener('click', ()=> renderAll());
@@ -3716,6 +3827,7 @@ btnAddOwned.addEventListener('click', async ()=> upsertOwned(ownedDate.value, ow
 btnDelOwned.addEventListener('click', async ()=> deleteOwned(ownedDate.value, ownedMedia.value));
 ownedFilter.addEventListener('change', ()=> renderOwned());
 ownedDate.addEventListener('change', ()=> renderOwnedCalendar());
+btnOwnedClearSelection?.addEventListener('click', ()=>{ state.ownedSelectedDates = []; saveState(); renderOwned(); });
 btnOwnedPrevMonth.addEventListener('click', ()=>{ state.ownedCalendarYm = addMonths(state.ownedCalendarYm || ymFromDate(), -1); renderOwnedCalendar(); });
 btnOwnedNextMonth.addEventListener('click', ()=>{ state.ownedCalendarYm = addMonths(state.ownedCalendarYm || ymFromDate(), 1); renderOwnedCalendar(); });
 
@@ -3724,6 +3836,7 @@ btnAddAds.addEventListener('click', async ()=> upsertAds(adsDate.value, adsPlatf
 btnDelAds.addEventListener('click', async ()=> deleteAds(adsDate.value, adsPlatform.value));
 adsFilter.addEventListener('change', ()=> renderAds());
 adsDate.addEventListener('change', ()=> renderAdsCalendar());
+btnAdsClearSelection?.addEventListener('click', ()=>{ state.adsSelectedDates = []; saveState(); renderAds(); });
 btnAdsPrevMonth.addEventListener('click', ()=>{ state.adsCalendarYm = addMonths(state.adsCalendarYm || ymFromDate(), -1); renderAdsCalendar(); });
 btnAdsNextMonth.addEventListener('click', ()=>{ state.adsCalendarYm = addMonths(state.adsCalendarYm || ymFromDate(), 1); renderAdsCalendar(); });
 
@@ -3844,6 +3957,16 @@ fileInput.addEventListener('change', async ()=>{
   const name=(f.name||'').toLowerCase();
 
   try{
+    const loadingMap = {
+      ads_meta:['메타 광고DB 업로드 중','CSV/엑셀을 읽어서 메타 광고DB에 반영하고 있어.'],
+      ads_google:['구글 광고DB 업로드 중','CSV/엑셀을 읽어서 구글 광고DB에 반영하고 있어.'],
+      owned_xlsx:['온드DB 업로드 중','엑셀을 읽어서 온드DB를 반영하고 있어.'],
+      owned_csv:['온드DB 업로드 중','CSV를 읽어서 온드DB를 반영하고 있어.'],
+      project_sheet:['프로젝트 정리표 업로드 중','강사/아이템/기수 데이터를 읽어서 프로젝트를 반영하고 있어.'],
+      project_zip:['ZIP 광고DB 분석 중','ZIP 파일 안의 구글/메타 파일을 분석하고 있어.']
+    };
+    const loadingInfo = loadingMap[pendingUpload] || ['업로드 중','파일을 처리하고 있어. 잠시만 기다려줘.'];
+    showLoading(loadingInfo[0], loadingInfo[1]);
     if(pendingUpload==='ads_meta' || pendingUpload==='ads_google'){
       const platform = pendingUpload==='ads_meta'?'meta':'google';
       if(name.endsWith('.xlsx') || name.endsWith('.xls')){
@@ -3889,6 +4012,7 @@ fileInput.addEventListener('change', async ()=>{
       return;
     }
   } finally {
+    hideLoading();
     pendingUpload=null;
     fileInput.value='';
   }
@@ -3898,6 +4022,7 @@ zipFileInput?.addEventListener('change', async (e)=>{
   const f = e.target?.files?.[0];
   try{
     if(!f) return;
+    showLoading('ZIP 광고DB 분석 중', 'ZIP 안의 구글/메타 파일을 읽어서 미리보기를 만들고 있어.');
     const name = String(f.name || '').toLowerCase();
     if(!name.endsWith('.zip')){
       alert('ZIP 일괄등록은 .zip 파일만 지원');
@@ -3909,6 +4034,7 @@ zipFileInput?.addEventListener('change', async (e)=>{
     console.error(err);
     alert(err?.message || 'ZIP 광고DB 미리보기 생성 실패');
   }finally{
+    hideLoading();
     if(zipFileInput) zipFileInput.value='';
   }
 });
@@ -3919,11 +4045,13 @@ btnZipPreviewCancel?.addEventListener('click', closeZipPreview);
 btnZipPreviewApply?.addEventListener('click', async ()=>{
   try{
     btnZipPreviewApply.disabled = true;
+    showLoading('광고DB 반영 중', '프로젝트를 만들고 ZIP 안의 구글/메타 광고DB를 서버에 저장하고 있어.');
     await applyZipAdsPreview(getZipDuplicateMode());
   }catch(err){
     console.error(err);
     alert((err?.message || 'ZIP 광고DB 반영 실패') + (err?.details ? `\n\n상세: ${err.details}` : '') + (err?.hint ? `\n힌트: ${err.hint}` : ''));
   }finally{
+    hideLoading();
     btnZipPreviewApply.disabled = false;
   }
 });
