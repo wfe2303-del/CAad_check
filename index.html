@@ -1278,29 +1278,51 @@ async function deleteOwnedOnDb(projectId, date, media){
     x.date === date && (x.media||'').trim() === media
   ));
 }
-async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
+async function writeSingleAdsRow(projectId, row){
   await ensureAuth();
   requireLogin();
 
-  const payload = {
+  const clean = {
     owner_id: ownerId(),
     project_id: projectId,
-    entry_date: date,
-    platform,
-    spend: Number(spend || 0),
-    clicks: Number(clicks || 0),
-    real_db: Number(realDb || 0)
+    entry_date: row.date,
+    platform: row.platform,
+    spend: Number(row.spend || 0),
+    clicks: Number(row.clicks || 0),
+    real_db: Number(row.realDb || 0)
   };
 
-  const { error } = await sb
+  const { data:exists, error:findErr } = await sb
     .from('ads_entries')
-    .upsert(payload, { onConflict:'project_id,entry_date,platform' });
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('entry_date', clean.entry_date)
+    .eq('platform', clean.platform)
+    .limit(1);
 
-  if(error) throw error;
+  if(findErr) throw findErr;
 
-  const p = state.projects[projectId];
-  const key = `${date}||${platform}`;
-  const idx = p.adsEntries.findIndex(x => `${x.date}||${x.platform}` === key);
+  if(exists && exists.length){
+    const { error:updateErr } = await sb
+      .from('ads_entries')
+      .update({
+        owner_id: clean.owner_id,
+        spend: clean.spend,
+        clicks: clean.clicks,
+        real_db: clean.real_db
+      })
+      .eq('project_id', projectId)
+      .eq('entry_date', clean.entry_date)
+      .eq('platform', clean.platform);
+    if(updateErr) throw updateErr;
+  }else{
+    const { error:insertErr } = await sb
+      .from('ads_entries')
+      .insert(clean);
+    if(insertErr) throw insertErr;
+  }
+}
+async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
   const rec = {
     date,
     platform,
@@ -1308,6 +1330,11 @@ async function upsertAdsOnDb(projectId, date, platform, spend, clicks, realDb){
     clicks:Number(clicks || 0),
     realDb:Number(realDb || 0)
   };
+  await writeSingleAdsRow(projectId, rec);
+
+  const p = state.projects[projectId];
+  const key = `${date}||${platform}`;
+  const idx = p.adsEntries.findIndex(x => `${x.date}||${x.platform}` === key);
   if(idx>=0) p.adsEntries[idx] = rec;
   else p.adsEntries.push(rec);
 }
@@ -1362,21 +1389,15 @@ async function bulkUpsertAdsOnDb(projectId, rows){
   await ensureAuth();
   requireLogin();
 
-  const payload = rows.map(r => ({
-    owner_id: ownerId(),
-    project_id: projectId,
-    entry_date: r.date,
-    platform: r.platform,
-    spend: Number(r.spend || 0),
-    clicks: Number(r.clicks || 0),
-    real_db: Number(r.realDb || 0)
-  }));
-
-  const { error } = await sb
-    .from('ads_entries')
-    .upsert(payload, { onConflict:'project_id,entry_date,platform' });
-
-  if(error) throw error;
+  for(const r of rows){
+    await writeSingleAdsRow(projectId, {
+      date:r.date,
+      platform:r.platform,
+      spend:Number(r.spend || 0),
+      clicks:Number(r.clicks || 0),
+      realDb:Number(r.realDb || 0)
+    });
+  }
 
   const p = state.projects[projectId];
   const m = new Map(p.adsEntries.map(x => [`${x.date}||${x.platform}`, x]));
@@ -1759,22 +1780,33 @@ async function applyZipAdsPreview(mode='skip'){
   }
   await ensureAuth();
   requireLogin();
-  let imported = 0, updated = 0, skipped = 0, createdProjects = 0;
+  let imported = 0, updated = 0, skipped = 0, createdProjects = 0, emptySkipped = 0;
   let lastId = state.currentProjectId || '';
+  const touchedProjectIds = new Set();
+
   for(const item of payload.items){
+    const normalizedRows = Array.isArray(item.rows)
+      ? item.rows.filter(r => r && r.date && (r.platform==='google' || r.platform==='meta'))
+      : [];
+
+    if(!normalizedRows.length){
+      emptySkipped++;
+      continue;
+    }
+
     let targetProject = item.project || null;
     if(!targetProject){
       targetProject = await createProjectOnDb(item.instructor, item.cohortLabel, true);
       item.project = targetProject;
       item.projectLabel = targetProject ? `${targetProject.instructor} / ${targetProject.cohort}` : '';
       item.missingProject = !targetProject;
-      createdProjects++;
+      if(targetProject) createdProjects++;
     }
     if(!targetProject) continue;
 
     const existing = new Set((targetProject.adsEntries || []).map(x=>`${x.date}||${x.platform}`));
     const rowsToWrite = [];
-    for(const r of (item.rows || [])){
+    for(const r of normalizedRows){
       const key = `${r.date}||${r.platform}`;
       if(existing.has(key)){
         if(mode === 'update'){
@@ -1790,22 +1822,21 @@ async function applyZipAdsPreview(mode='skip'){
     }
     if(rowsToWrite.length){
       await bulkUpsertAdsOnDb(targetProject.id, rowsToWrite);
-      if(Array.isArray(targetProject.adsEntries)){
-        for(const r of rowsToWrite){
-          const idx = targetProject.adsEntries.findIndex(x => `${x.date}||${x.platform}` === `${r.date}||${r.platform}`);
-          if(idx >= 0) targetProject.adsEntries[idx] = { ...targetProject.adsEntries[idx], ...r };
-          else targetProject.adsEntries.push({ ...r });
-        }
-      }
+      touchedProjectIds.add(targetProject.id);
       lastId = targetProject.id || lastId;
     }
   }
+
+  if(touchedProjectIds.size){
+    await loadStateFromDb();
+  }
+
   if(lastId && state.projects[lastId]) state.currentProjectId = lastId;
   saveState();
   renderAll();
   closeZipPreview();
   closeProjectMenu();
-  showToast('ZIP 광고DB 반영 완료', `인식 파일 ${fmtInt(payload.scannedFiles)}개 · 프로젝트 생성 ${fmtInt(createdProjects)}건 · 신규 ${fmtInt(imported)}행 · 업데이트 ${fmtInt(updated)}행 · 건너뜀 ${fmtInt(skipped)}행`);
+  showToast('ZIP 광고DB 반영 완료', `인식 파일 ${fmtInt(payload.scannedFiles)}개 · 프로젝트 생성 ${fmtInt(createdProjects)}건 · 신규 ${fmtInt(imported)}행 · 업데이트 ${fmtInt(updated)}행 · 건너뜀 ${fmtInt(skipped)}행${emptySkipped ? ` · 데이터없음 ${fmtInt(emptySkipped)}건` : ''}`);
 }
 function projLabel(p){ return `${p.instructor} / ${p.cohort}`; }
 function hasProject(){ return !!getProj(); }
@@ -3891,7 +3922,7 @@ btnZipPreviewApply?.addEventListener('click', async ()=>{
     await applyZipAdsPreview(getZipDuplicateMode());
   }catch(err){
     console.error(err);
-    alert(err?.message || 'ZIP 광고DB 반영 실패');
+    alert((err?.message || 'ZIP 광고DB 반영 실패') + (err?.details ? `\n\n상세: ${err.details}` : '') + (err?.hint ? `\n힌트: ${err.hint}` : ''));
   }finally{
     btnZipPreviewApply.disabled = false;
   }
