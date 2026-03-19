@@ -124,6 +124,22 @@ const loginPw = $('loginPw');
 const btnLogin = $('btnLogin');
 const loginMsg = $('loginMsg');
 
+const instructorHero = $('instructorHero');
+const pageInstructorTitle = $('pageInstructorTitle');
+const pageInstructorSub = $('pageInstructorSub');
+const instructorHeroStats = $('instructorHeroStats');
+const instructorCohortChips = $('instructorCohortChips');
+const nextCalcBaseLabel = $('nextCalcBaseLabel');
+const nextCalcNextLabel = $('nextCalcNextLabel');
+const nextCalcExtraSpend = $('nextCalcExtraSpend');
+const nextCalcSummary = $('nextCalcSummary');
+const nextCalcProjectedRevenue = $('nextCalcProjectedRevenue');
+const nextCalcProjectedSub = $('nextCalcProjectedSub');
+const nextCalcAddedDb = $('nextCalcAddedDb');
+const nextCalcCpa = $('nextCalcCpa');
+const nextCalcValuePerDb = $('nextCalcValuePerDb');
+const btnOpenCompareTab = $('btnOpenCompareTab');
+
 const fileInput = $('fileInput');
 const zipFileInput = $('zipFileInput');
 const zipPreviewModal = $('zipPreviewModal');
@@ -147,7 +163,7 @@ function updateLoadingProgress(percent=null, text=''){
   loadingProgressBar.style.width = `${safe}%`;
   loadingProgressText.textContent = text || `${safe}%`;
 }
-function showLoading(title='로딩 중', sub='파일을 읽고 데이터를 반영하고 있어. 잠시만 기다려줘.') {
+function showLoading(title='로딩 중', sub='파일을 읽고 데이터를 반영하고 있습니다. 잠시만 기다려 주세요.') {
   if(loadingTitleEl) loadingTitleEl.textContent = title;
   if(loadingSubEl) loadingSubEl.textContent = sub;
   updateLoadingProgress(null, '');
@@ -203,8 +219,27 @@ function showToast(title, msg=''){
 /** =========================
  *  Projects
  *  ========================= */
-function getProj(){ return state.projects[state.currentProjectId]; }
-function listProjects(){ return Object.values(state.projects || {}); }
+function rawProjects(){ return Object.values(state.projects || {}); }
+function listProjects(){
+  const all = rawProjects();
+  const inst = getPageInstructorFilter ? getPageInstructorFilter() : '';
+  const item = getPageItemFilter ? getPageItemFilter() : '';
+  if(!inst) return all;
+  return all.filter(p => {
+    const instOk = String(p?.instructor || '').trim() === inst;
+    if(!instOk) return false;
+    if(!item) return true;
+    const parsed = splitProjectCohortLabel ? splitProjectCohortLabel(p?.cohort) : { item: '' };
+    return String(parsed?.item || '').trim() === item;
+  });
+}
+function getProj(){
+  const p = state.projects[state.currentProjectId];
+  const scoped = listProjects();
+  if(!p) return scoped[0] || null;
+  if(!scoped.some(x => x.id === p.id)) return scoped[0] || null;
+  return p;
+}
 
 function normalizeProjectKeyPart(v){ return String(v || '').replace(/\s+/g,'').trim().toLowerCase(); }
 function makeProjectKey(instructor, cohort){ return `${normalizeProjectKeyPart(instructor)}||${normalizeProjectKeyPart(cohort)}`; }
@@ -248,7 +283,7 @@ function renderZipPreviewModal(payload){
   pendingZipPreview = payload;
   const stats = [
     { k:'인식 파일', v: fmtInt(payload.scannedFiles), s:'ZIP 안에서 패턴 인식된 파일 수' },
-    { k:'기존 매칭 프로젝트', v: fmtInt(payload.matchedProjectCount || 0), s:'현재 등록된 프로젝트와 바로 연결된 개수' },
+    { k:'기존 매칭 프로젝트', v: fmtInt(payload.matchedProjectCount || 0), s:'현재 등록된 프로젝트와 즉시 연결된 개수' },
     { k:'자동 생성 예정', v: fmtInt(payload.missingProjectCount || 0), s:'프로젝트가 없으면 강사/아이템/기수 기준으로 새로 생성' },
     { k:'반영 후보 행', v: fmtInt(payload.totalRows || 0), s:'날짜+매체 기준 광고DB 업서트 후보 수' },
     { k:'기존 충돌 행', v: fmtInt(payload.duplicateRowCount || 0), s:'이미 같은 날짜·매체가 있는 광고DB 수' },
@@ -279,7 +314,7 @@ function renderZipPreviewModal(payload){
       <td>${item.missingProject ? `<span class="small">자동 생성 예정</span><div class="small" style="margin-top:4px">${escapeHtml(item.instructor)} / ${escapeHtml(item.cohortLabel)}</div>` : escapeHtml(item.projectLabel || '')}<div class="small" style="margin-top:4px">후보 ${fmtInt(item.rowCount || 0)}행 · 충돌 ${fmtInt(item.duplicateRows || 0)}행</div></td>
     </tr>`;
   }).join('');
-  zipPreviewTbody.innerHTML = rows || `<tr><td colspan="5" class="menuEmpty">인식된 광고DB 후보가 없어</td></tr>`;
+  zipPreviewTbody.innerHTML = rows || `<tr><td colspan="5" class="menuEmpty">인식된 광고DB 후보가 없습니다.</td></tr>`;
   zipPreviewFootHint.textContent = payload.items.length > 160
     ? `미리보기는 160개만 표시 · 전체 ${fmtInt(payload.items.length)}개 후보`
     : `총 ${fmtInt(payload.items.length)}개 후보 · 기존 프로젝트 반영 ${fmtInt((payload.items||[]).filter(x=>!x.missingProject).length)}개 · 자동 생성 후 반영 ${fmtInt(payload.missingProjectCount || 0)}개`;

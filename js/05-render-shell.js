@@ -117,7 +117,7 @@ function renderProjectMenu(){
   const query = String(projectMenuSearch?.value || '').trim().toLowerCase();
   if(!groups.length){
     if(projectMenuMeta) projectMenuMeta.textContent = '강사 0명 · 기수 0개';
-    projectMenuList.innerHTML = `<div class="menuEmpty">등록된 프로젝트가 없어.</div>`;
+    projectMenuList.innerHTML = `<div class="menuEmpty">등록된 프로젝트가 없습니다.</div>`;
     return;
   }
   const current = getProj();
@@ -140,7 +140,7 @@ function renderProjectMenu(){
     : `전체 강사 ${fmtInt(groups.length)}명 · 기수 ${fmtInt(totalProjects)}개`;
 
   if(!filtered.length){
-    projectMenuList.innerHTML = `<div class="menuEmpty">검색 결과가 없어. 강사명이나 기수명을 다시 확인해줘.</div>`;
+    projectMenuList.innerHTML = `<div class="menuEmpty">검색 결과가 없습니다. 강사명이나 기수명을 다시 확인해 주세요.</div>`;
     return;
   }
 
@@ -512,11 +512,72 @@ function refreshSettingsUI(){
   const totalAdSpend = (p.adsEntries||[]).reduce((a,b)=>a+Number(b.spend||0),0);
   const adShareAmount = totalAdSpend * Number(p.settlement?.adShareRate||0) / 100;
   revenueCompareBox.innerHTML =
-    `<b>현재</b> 실매출 ${fmtWon(p.actualRevenue||0)} / 모집DB ${fmtInt(recruitFinal)} (Owned+Paid)<br/>` +
-    `<b>현재 DB당 가치</b> ${fmtWon(valuePerDbAuto)} (실매출/모집DB)<br/>` +
-    `<b>강사 정산비율</b> ${fmtRate(Number(p.settlement?.instructorRate||0)/100)} → <b>정산 예상액</b> ${fmtWon(instructorSettle)}<br/>` +
-    `<b>광고 분담비율</b> ${fmtRate(Number(p.settlement?.adShareRate||0)/100)} → <b>광고 분담 예상액</b> ${fmtWon(adShareAmount)} (총 광고비 ${fmtWon(totalAdSpend)} 기준)<br/>` +
-    `<b>이전기수 DB당 가치</b> ${fmtWon(prevValuePerDbFinal)} → <b>예상매출</b> ${fmtWon(expected)} (이전 DB당가치×현 모집DB)`;
+    `<div class="revenueHeroGrid">` +
+      `<div class="revStatCard is-primary revHeroCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">현재 실매출</div>` +
+          `<span class="revStatBadge">실매출</span>` +
+        `</div>` +
+        `<div class="revStatValue revStatValueHero">${fmtWon(p.actualRevenue||0)}</div>` +
+      `</div>` +
+      `<div class="revStatCard is-accent revHeroCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">현 모집DB 기준 예상매출</div>` +
+          `<span class="revStatBadge">예상매출</span>` +
+        `</div>` +
+        `<div class="revStatValue revStatValueHero">${fmtWon(expected)}</div>` +
+      `</div>` +
+    `</div>` +
+    `<div class="revenueMiniGrid">` +
+      `<div class="revStatCard revMiniCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">모집DB</div>` +
+          `<span class="revStatBadge">DB</span>` +
+        `</div>` +
+        `<div class="revStatValue is-small">${fmtInt(recruitFinal)}</div>` +
+        `<div class="revStatMeta">Owned + Paid</div>` +
+      `</div>` +
+      `<div class="revStatCard revMiniCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">현재 DB당 가치</div>` +
+          `<span class="revStatBadge">현재</span>` +
+        `</div>` +
+        `<div class="revStatValue is-small">${fmtWon(valuePerDbAuto)}</div>` +
+        `<div class="revStatMeta">실매출 ÷ 모집DB</div>` +
+      `</div>` +
+      `<div class="revStatCard revMiniCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">이전기수 DB당 가치</div>` +
+          `<span class="revStatBadge">이전</span>` +
+        `</div>` +
+        `<div class="revStatValue is-small">${fmtWon(prevValuePerDbFinal)}</div>` +
+        `<div class="revStatMeta">예상매출 기준</div>` +
+      `</div>` +
+      `<div class="revStatCard revMiniCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">강사 정산 예상액</div>` +
+          `<span class="revStatBadge">정산</span>` +
+        `</div>` +
+        `<div class="revStatValue is-small">${fmtWon(instructorSettle)}</div>` +
+        `<div class="revStatMeta">정산비율 ${fmtRate(Number(p.settlement?.instructorRate||0)/100)}</div>` +
+      `</div>` +
+      `<div class="revStatCard revMiniCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">광고 분담 예상액</div>` +
+          `<span class="revStatBadge">분담</span>` +
+        `</div>` +
+        `<div class="revStatValue is-small">${fmtWon(adShareAmount)}</div>` +
+        `<div class="revStatMeta">분담비율 ${fmtRate(Number(p.settlement?.adShareRate||0)/100)}</div>` +
+      `</div>` +
+      `<div class="revStatCard revMiniCard">` +
+        `<div class="revStatHead">` +
+          `<div class="revStatLabel">총 광고비</div>` +
+          `<span class="revStatBadge">광고비</span>` +
+        `</div>` +
+        `<div class="revStatValue is-small">${fmtWon(totalAdSpend)}</div>` +
+        `<div class="revStatMeta">광고DB 누적</div>` +
+      `</div>` +
+    `</div>`;
 }
 function renderAll(){
   updateAuthUi();
